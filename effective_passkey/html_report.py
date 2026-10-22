@@ -1,0 +1,152 @@
+"""Self-contained HTML report: no external assets, safe to email or attach."""
+
+from __future__ import annotations
+
+from html import escape
+
+CSS = """
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1d21;--muted:#5f6670;--line:#e3e3df;
+--crit:#b42318;--high:#c4560c;--med:#a77b00;--low:#3b6db3;--info:#5f6670;--ok:#1f7a4d;--accent:#3b4bd8}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--panel:#1b1e23;--ink:#e8e9eb;--muted:#9aa1ab;--line:#2c3038;
+--crit:#ff6b5e;--high:#ff9a4d;--med:#e6c14a;--low:#7aa7ff;--info:#9aa1ab;--ok:#4cc38a;--accent:#8c96ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:40px 0 12px}
+.meta{color:var(--muted);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:24px 0}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.tile span{color:var(--muted);font-size:13px}
+.tile.alert b{color:var(--crit)}
+.grade{display:inline-block;font-weight:700;border-radius:8px;padding:2px 10px;margin-left:8px;color:#fff}
+.g-A,.g-B{background:var(--ok)}.g-C{background:var(--med)}.g-D,.g-F{background:var(--crit)}
+.callout{background:var(--panel);border-left:4px solid var(--accent);border-radius:6px;padding:12px 16px;margin:16px 0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:13px}
+.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+details.f{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:0}
+details.f summary{cursor:pointer;padding:12px 16px;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.f summary::-webkit-details-marker{display:none}
+details.f .body{padding:0 16px 14px}
+.sev{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:2px 6px;color:#fff}
+.sev.critical{background:var(--crit)}.sev.high{background:var(--high)}.sev.medium{background:var(--med)}
+.sev.low{background:var(--low)}.sev.info{background:var(--info)}
+.rule{font-weight:600;color:var(--muted);font-size:13px}
+.subj{color:var(--muted);font-size:13px;word-break:break-all}
+ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
+.action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.r5,.r4{color:var(--crit);font-weight:600}.r3{color:var(--high)}.r2,.r1{color:var(--ok)}.r0{color:var(--muted)}
+dl.rules{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}dl.rules dt{font-weight:600}dl.rules dd{margin:0;color:var(--muted)}
+footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+"""
+
+JS = """
+document.querySelectorAll('.filters button').forEach(function(b){b.addEventListener('click',function(){
+document.querySelectorAll('.filters button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+b.setAttribute('aria-pressed','true');var f=b.dataset.f;
+document.querySelectorAll('details.f').forEach(function(d){
+var show=f==='all'||d.dataset.sev===f||(f==='deadline'&&(d.dataset.rule==='R3'||d.dataset.rule==='R8'))||(f==='privileged'&&d.dataset.priv==='1');
+d.style.display=show?'':'none'})})});
+"""
+
+
+def e(x) -> str:
+    return escape(str(x), quote=True)
+
+
+def render(result: dict) -> str:
+    s = result["summary"]
+    d = result["deadlines"]
+    sev = s["findingsBySeverity"]
+    priv_ids = {u["id"] for u in result["users"] if u["privileged"]}
+
+    tiles = [
+        (d["daysToMain"], "days to 1 Feb 2027 SMS/voice retirement", False),
+        (s["privilegedSyncedAllowed"], f"of {s['privileged']} privileged users can register a synced passkey", s["privilegedSyncedAllowed"] > 0),
+        (sev["critical"], "critical findings", sev["critical"] > 0),
+        (s["smsFebCohort"], "SMS/voice-only users, 1 Feb 2027 cohort", s["smsFebCohort"] > 0),
+        (s["smsJulCohort"], "SMS/voice-only users, 1 Jul 2027 cohort", False),
+        (s["users"], "users analyzed", False),
+    ]
+    tile_html = "".join(
+        f'<div class="tile{" alert" if alert else ""}"><b>{e(v)}</b><span>{e(label)}</span></div>' for v, label, alert in tiles
+    )
+
+    finding_html = []
+    for f in result["findings"]:
+        ev = "".join(f"<li>{e(x)}</li>" for x in f["evidence"])
+        finding_html.append(
+            f'<details class="f" data-sev="{e(f["severity"])}" data-rule="{e(f["rule"])}" data-priv="{int(f["userId"] in priv_ids)}">'
+            f'<summary><span class="sev {e(f["severity"])}">{e(f["severity"])}</span>'
+            f'<span class="rule">{e(f["rule"])} {e(f["ruleName"])}</span>'
+            f'<strong>{e(f["title"])}</strong><span class="subj">{e(f["subject"])}</span></summary>'
+            f'<div class="body"><p>{e(f["detail"])}</p><div class="meta">Evidence chain</div><ol class="ev">{ev}</ol>'
+            f'<div class="action"><strong>Action:</strong> {e(f["action"])}</div></div></details>'
+        )
+    if not finding_html:
+        finding_html.append('<p class="callout">No findings. Every user\'s effective policy matches its intent tier.</p>')
+
+    user_rows = "".join(
+        f"<tr><td>{e(u['upn'] or u['displayName'])}<div class='meta'>{e(u['category'])}</div></td>"
+        f"<td>{e(u['roles'] or '-')}</td>"
+        f"<td class='r{u['rank']}'>{e(u['weakestCredential'])}</td>"
+        f"<td>{e(', '.join(u['profiles']) or '-')}</td>"
+        f"<td>{e(', '.join(u['permittedBy']) or '-')}</td>"
+        f"<td>{e(u['smsCohort'] or '-')}</td>"
+        f"<td>{e(', '.join(u['findings']) or '-')}</td></tr>"
+        for u in result["users"]
+    )
+    profile_rows = "".join(
+        f"<tr><td>{e(p['name'])}{' <span class=meta>(legacy)</span>' if p['legacy'] else ''}</td>"
+        f"<td>{e(', '.join(p['passkeyTypes']))}</td><td>{'required' if p['attestationEnforced'] else 'off'}</td>"
+        f"<td>{e(p['keyRestriction'])}</td><td>{e(p['weakestCredential'])}</td><td>{e(p['usersScoped'])}</td></tr>"
+        for p in result["profiles"]
+    )
+    rules = "".join(f"<dt>{e(k)} {e(r['name'])}</dt><dd>{e(r['definition'])}</dd>" for k, r in result["rules"].items())
+    notes = "".join(f"<p>{e(n)}</p>" for n in result["notes"])
+    tool = f"{result['tool']['name']} {result['tool']['version']}"
+
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EffectivePasskey report</title><style>{CSS}</style></head>
+<body><main>
+<h1>Effective passkey policy: {e(result['tenant'])}<span class="grade g-{e(s['grade'])}">{e(s['grade'])}</span></h1>
+<div class="meta">As of {e(result['asOf'])} · {e(tool)} · computed offline from read-only exports</div>
+<div class="tiles">{tile_html}</div>
+<div class="callout"><strong>How to read this.</strong> When a user is scoped to more than one passkey profile, Entra allows a passkey
+if it satisfies <em>at least one</em> of them. Profiles do not stack toward strict, they union toward permissive. Exclusion from the
+passkey policy is the one thing that beats inclusion. Each user's effective policy below is that union.
+SMS and voice retire on 1 Feb 2027 with a blocking passkey prompt and no opt-out; Global Admins and external users follow on 1 Jul 2027.</div>
+
+<h2>Findings</h2>
+<div class="filters" role="group" aria-label="Filter findings">
+<button data-f="all" aria-pressed="true">All ({len(result['findings'])})</button>
+<button data-f="critical" aria-pressed="false">Critical ({sev['critical']})</button>
+<button data-f="high" aria-pressed="false">High ({sev['high']})</button>
+<button data-f="medium" aria-pressed="false">Medium ({sev['medium']})</button>
+<button data-f="privileged" aria-pressed="false">Privileged users</button>
+<button data-f="deadline" aria-pressed="false">Deadline cohorts</button>
+</div>
+{''.join(finding_html)}
+
+<h2>Effective policy per user</h2>
+<div class="tablewrap"><table><thead><tr><th>User</th><th>Privileged roles</th><th>Weakest credential they can register</th>
+<th>Scoped profiles</th><th>Permitted by</th><th>SMS cohort</th><th>Rules</th></tr></thead><tbody>{user_rows}</tbody></table></div>
+
+<h2>Passkey profiles</h2>
+<div class="tablewrap"><table><thead><tr><th>Profile</th><th>Types</th><th>Attestation</th><th>AAGUID restriction</th>
+<th>Weakest credential</th><th>Users scoped</th></tr></thead><tbody>{profile_rows}</tbody></table></div>
+
+<h2>Rule definitions</h2>
+<dl class="rules">{rules}</dl>
+
+<footer>{notes}<p>Generated by {e(tool)}, an offline, read-only Entra ID passkey auditor. The analyzer never holds a token:
+you export, you analyze, you delete. Semantics per Microsoft Learn (passkey profiles; SMS and voice retirement).</p></footer>
+</main><script>{JS}</script></body></html>
+"""

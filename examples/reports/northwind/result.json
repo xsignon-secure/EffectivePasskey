@@ -1,0 +1,484 @@
+{
+  "tool": {
+    "name": "EffectivePasskey",
+    "version": "0.1.0"
+  },
+  "tenant": "Northwind (synthetic demo)",
+  "asOf": "2026-10-22",
+  "deadlines": {
+    "main": "2027-02-01",
+    "late": "2027-07-01",
+    "daysToMain": 102,
+    "daysToLate": 252
+  },
+  "summary": {
+    "users": 8,
+    "privileged": 2,
+    "privilegedSyncedAllowed": 1,
+    "smsFebCohort": 3,
+    "smsJulCohort": 2,
+    "fido2State": "enabled",
+    "legacyPolicy": true,
+    "findingsBySeverity": {
+      "critical": 8,
+      "high": 1,
+      "medium": 2,
+      "low": 1,
+      "info": 0
+    },
+    "grade": "F"
+  },
+  "findings": [
+    {
+      "key": "R1|user|oscar@northwind.example|Privileged user can register a synced passkey",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "oscar@northwind.example",
+      "subjectType": "user",
+      "userId": "u-oscar",
+      "cohort": "",
+      "detail": "oscar@northwind.example (User Administrator) can register: Synced passkey, any provider, unattested. No strict profile covers them at all.",
+      "evidence": [
+        "oscar@northwind.example holds privileged role(s): User Administrator",
+        "member of group 'Passkey Pilot' \u2192 scoped to profile 'Default (legacy FIDO2 settings)'",
+        "Profile 'Default (legacy FIDO2 settings)': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Default (legacy FIDO2 settings)')"
+      ],
+      "action": "Exclude privileged users from the target(s) 'Passkey Pilot' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
+      "key": "R3|user|nora@northwind.example|SMS/voice-only user with no passkey path",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "critical",
+      "title": "SMS/voice-only user with no passkey path",
+      "subject": "nora@northwind.example",
+      "subjectType": "user",
+      "userId": "u-nora",
+      "cohort": "1 Jul 2027 (Global Admin)",
+      "detail": "nora@northwind.example relies only on mobilePhone, officePhone. Blocking registration prompt from 1 Jul 2027 (Global Admin).",
+      "evidence": [
+        "Registered MFA methods: mobilePhone, officePhone (no non-phone MFA method)",
+        "User category: member, Global Administrator",
+        "Deadline cohort: 1 Jul 2027 (Global Admin); 252 day(s) from 2026-10-22",
+        "Passkey policy status: Not targeted by passkey policy",
+        "They will be prompted to register a passkey, but current policy does not let them register one."
+      ],
+      "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
+    },
+    {
+      "key": "R3|user|quinn@northwind.example|SMS/voice-only user with no passkey path",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "critical",
+      "title": "SMS/voice-only user with no passkey path",
+      "subject": "quinn@northwind.example",
+      "subjectType": "user",
+      "userId": "u-quinn",
+      "cohort": "1 Feb 2027",
+      "detail": "quinn@northwind.example relies only on mobilePhone. Blocking registration prompt from 1 Feb 2027.",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: member",
+        "Deadline cohort: 1 Feb 2027; 102 day(s) from 2026-10-22",
+        "Passkey policy status: Not targeted by passkey policy",
+        "They will be prompted to register a passkey, but current policy does not let them register one."
+      ],
+      "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
+    },
+    {
+      "key": "R3|user|ravi@northwind.example|SMS/voice-only user with no passkey path",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "critical",
+      "title": "SMS/voice-only user with no passkey path",
+      "subject": "ravi@northwind.example",
+      "subjectType": "user",
+      "userId": "u-ravi",
+      "cohort": "1 Feb 2027",
+      "detail": "ravi@northwind.example relies only on mobilePhone. Blocking registration prompt from 1 Feb 2027.",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: member",
+        "Deadline cohort: 1 Feb 2027; 102 day(s) from 2026-10-22",
+        "Passkey policy status: Not targeted by passkey policy",
+        "They will be prompted to register a passkey, but current policy does not let them register one."
+      ],
+      "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
+    },
+    {
+      "key": "R3|user|sara.contractor@northwind.example|SMS/voice-only user with no passkey path",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "critical",
+      "title": "SMS/voice-only user with no passkey path",
+      "subject": "sara.contractor@northwind.example",
+      "subjectType": "user",
+      "userId": "u-sara",
+      "cohort": "1 Feb 2027 (internal guest)",
+      "detail": "sara.contractor@northwind.example relies only on mobilePhone. Blocking registration prompt from 1 Feb 2027 (internal guest).",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: internalGuest",
+        "Deadline cohort: 1 Feb 2027 (internal guest); 102 day(s) from 2026-10-22",
+        "Passkey policy status: Not targeted by passkey policy",
+        "They will be prompted to register a passkey, but current policy does not let them register one."
+      ],
+      "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
+    },
+    {
+      "key": "R3|user|tom_supplier.example#EXT#@northwind.example|SMS/voice-only user with no passkey path",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "critical",
+      "title": "SMS/voice-only user with no passkey path",
+      "subject": "tom_supplier.example#EXT#@northwind.example",
+      "subjectType": "user",
+      "userId": "u-tom",
+      "cohort": "1 Jul 2027 (external user)",
+      "detail": "tom_supplier.example#EXT#@northwind.example relies only on mobilePhone. Blocking registration prompt from 1 Jul 2027 (external user).",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: external",
+        "Deadline cohort: 1 Jul 2027 (external user); 252 day(s) from 2026-10-22",
+        "Passkey policy status: Not targeted by passkey policy",
+        "They will be prompted to register a passkey, but current policy does not let them register one."
+      ],
+      "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
+    },
+    {
+      "key": "R7|user|nora@northwind.example|Privileged user has no phishing-resistant method",
+      "rule": "R7",
+      "ruleName": "No phishing-resistant method",
+      "severity": "critical",
+      "title": "Privileged user has no phishing-resistant method",
+      "subject": "nora@northwind.example",
+      "subjectType": "user",
+      "userId": "u-nora",
+      "cohort": "",
+      "detail": "nora@northwind.example (Global Administrator) has no passkey, Windows Hello for Business or certificate registered.",
+      "evidence": [
+        "nora@northwind.example holds privileged role(s): Global Administrator",
+        "Registered methods: mobilePhone, officePhone"
+      ],
+      "action": "Issue this admin a device-bound passkey (security key or Authenticator) and require it with an authentication strength."
+    },
+    {
+      "key": "R7|user|oscar@northwind.example|Privileged user has no phishing-resistant method",
+      "rule": "R7",
+      "ruleName": "No phishing-resistant method",
+      "severity": "critical",
+      "title": "Privileged user has no phishing-resistant method",
+      "subject": "oscar@northwind.example",
+      "subjectType": "user",
+      "userId": "u-oscar",
+      "cohort": "",
+      "detail": "oscar@northwind.example (User Administrator) has no passkey, Windows Hello for Business or certificate registered.",
+      "evidence": [
+        "oscar@northwind.example holds privileged role(s): User Administrator",
+        "Registered methods: microsoftAuthenticatorPush, mobilePhone"
+      ],
+      "action": "Issue this admin a device-bound passkey (security key or Authenticator) and require it with an authentication strength."
+    },
+    {
+      "key": "R4|user|oscar@northwind.example|Privileged SMS/voice user in an 'all passkey types' profile",
+      "rule": "R4",
+      "ruleName": "Auto-enabled admin",
+      "severity": "high",
+      "title": "Privileged SMS/voice user in an 'all passkey types' profile",
+      "subject": "oscar@northwind.example",
+      "subjectType": "user",
+      "userId": "u-oscar",
+      "cohort": "",
+      "detail": "oscar@northwind.example has phone MFA and sits in 'Default (legacy FIDO2 settings)', which allows every passkey type with no attestation.",
+      "evidence": [
+        "oscar@northwind.example holds privileged role(s): User Administrator",
+        "Phone methods registered: mobilePhone",
+        "Microsoft auto-enabled passkeys for SMS/voice users on 1 Sep 2026 in a profile allowing all passkey types.",
+        "Profile 'Default (legacy FIDO2 settings)': deviceBound + synced; no attestation; no AAGUID restriction"
+      ],
+      "action": "Move this admin into an admin-only device-bound profile and out of the all-types profile's target."
+    },
+    {
+      "key": "R6|profile|Default (legacy FIDO2 settings)|Legacy FIDO2 settings imply synced passkeys",
+      "rule": "R6",
+      "ruleName": "Attestation illusion",
+      "severity": "medium",
+      "title": "Legacy FIDO2 settings imply synced passkeys",
+      "subject": "Default (legacy FIDO2 settings)",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "This tenant has no passkey profiles in the export. Microsoft's migration derives passkey type from the old attestation toggle, so with attestation off, synced passkeys are allowed.",
+      "evidence": [
+        "policy.json FIDO2 config has no passkeyProfiles",
+        "isAttestationEnforced is false"
+      ],
+      "action": "Create explicit passkey profiles and decide on synced passkeys deliberately."
+    },
+    {
+      "key": "R8|tenant|tenant|Campaign misses part of the SMS/voice cohort",
+      "rule": "R8",
+      "ruleName": "Campaign gap",
+      "severity": "medium",
+      "title": "Campaign misses part of the SMS/voice cohort",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "5 of 5 SMS/voice-only users are not targeted (or are excluded) by the campaign.",
+      "evidence": [
+        "Not covered: nora@northwind.example, quinn@northwind.example, ravi@northwind.example, sara.contractor@northwind.example, tom_supplier.example#EXT#@northwind.example"
+      ],
+      "action": "Target the campaign at all users, or at a group containing the whole cohort."
+    },
+    {
+      "key": "R8|tenant|tenant|Campaign nudges a non-passkey method",
+      "rule": "R8",
+      "ruleName": "Campaign gap",
+      "severity": "low",
+      "title": "Campaign nudges a non-passkey method",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "The campaign targets 'microsoftAuthenticator', not passkeys.",
+      "evidence": [
+        "targetedAuthenticationMethod = microsoftAuthenticator"
+      ],
+      "action": "Point the campaign at passkeys if your goal is phishing-resistant MFA for this cohort."
+    }
+  ],
+  "users": [
+    {
+      "id": "u-oscar",
+      "upn": "oscar@northwind.example",
+      "displayName": "Oscar UserAdmin",
+      "category": "member",
+      "privileged": true,
+      "roles": "User Administrator",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default (legacy FIDO2 settings)"
+      ],
+      "permittedBy": [
+        "Default (legacy FIDO2 settings)"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": [
+        "R1",
+        "R4",
+        "R7"
+      ]
+    },
+    {
+      "id": "u-paula",
+      "upn": "paula@northwind.example",
+      "displayName": "Paula Pilot",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default (legacy FIDO2 settings)"
+      ],
+      "permittedBy": [
+        "Default (legacy FIDO2 settings)"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": []
+    },
+    {
+      "id": "u-nora",
+      "upn": "nora@northwind.example",
+      "displayName": "Nora Global",
+      "category": "member",
+      "privileged": true,
+      "roles": "Global Administrator",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": true,
+      "smsCohort": "1 Jul 2027 (Global Admin)",
+      "keys": [],
+      "findings": [
+        "R3",
+        "R7"
+      ]
+    },
+    {
+      "id": "u-quinn",
+      "upn": "quinn@northwind.example",
+      "displayName": "Quinn Store",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-ravi",
+      "upn": "ravi@northwind.example",
+      "displayName": "Ravi Driver",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-sara",
+      "upn": "sara.contractor@northwind.example",
+      "displayName": "Sara (internal guest)",
+      "category": "internalGuest",
+      "privileged": false,
+      "roles": "",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027 (internal guest)",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-tom",
+      "upn": "tom_supplier.example#EXT#@northwind.example",
+      "displayName": "Tom (Supplier)",
+      "category": "external",
+      "privileged": false,
+      "roles": "",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": true,
+      "smsCohort": "1 Jul 2027 (external user)",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-uma",
+      "upn": "uma@northwind.example",
+      "displayName": "Uma Analyst",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "not_targeted",
+      "rank": 0,
+      "weakestCredential": "Not targeted by passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": []
+    }
+  ],
+  "profiles": [
+    {
+      "id": "default",
+      "name": "Default (legacy FIDO2 settings)",
+      "passkeyTypes": [
+        "deviceBound",
+        "synced"
+      ],
+      "attestationEnforced": false,
+      "keyRestriction": "none",
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "usersScoped": 2,
+      "legacy": true
+    }
+  ],
+  "rules": {
+    "R1": {
+      "name": "Overlap weakening",
+      "definition": "A privileged user can register a weaker passkey than the admin profile intends, because at least one scoped profile allows it."
+    },
+    "R2": {
+      "name": "Weak key already held",
+      "definition": "A privileged user already holds a synced or unattested passkey."
+    },
+    "R3": {
+      "name": "Deadline cohort",
+      "definition": "User's only MFA is SMS or voice. They hit a blocking passkey registration prompt on 1 Feb 2027 (Global Admins and external users: 1 Jul 2027)."
+    },
+    "R4": {
+      "name": "Auto-enabled admin",
+      "definition": "A privileged SMS/voice user sits in an 'all passkey types' profile, the shape Microsoft auto-enabled on 1 Sep 2026."
+    },
+    "R5": {
+      "name": "AAGUID trap",
+      "definition": "A user holds a passkey that none of their scoped profiles accepts. Microsoft blocks keys whose AAGUID is not permitted, so they lose sign-in with it."
+    },
+    "R6": {
+      "name": "Attestation illusion",
+      "definition": "A profile is relied on as 'attested' but synced passkeys cannot be attested, or its users can bypass it through another profile."
+    },
+    "R7": {
+      "name": "No phishing-resistant method",
+      "definition": "A privileged user has no phishing-resistant method registered."
+    },
+    "R8": {
+      "name": "Campaign gap",
+      "definition": "The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline."
+    },
+    "R9": {
+      "name": "Excluded but privileged",
+      "definition": "A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all."
+    },
+    "R10": {
+      "name": "Policy hygiene",
+      "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    }
+  },
+  "notes": [
+    "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."
+  ]
+}

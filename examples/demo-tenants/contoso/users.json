@@ -1,0 +1,71 @@
+{
+  "value": [
+    {
+      "id": "u-alice",
+      "userPrincipalName": "alice@contoso.example",
+      "userDisplayName": "Alice Admin",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBound",
+        "microsoftAuthenticatorPush"
+      ]
+    },
+    {
+      "id": "u-bob",
+      "userPrincipalName": "bob@contoso.example",
+      "userDisplayName": "Bob SecOps",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone",
+        "sms"
+      ]
+    },
+    {
+      "id": "u-carol",
+      "userPrincipalName": "carol@contoso.example",
+      "userDisplayName": "Carol PIM",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeySynced",
+        "microsoftAuthenticatorPush"
+      ]
+    },
+    {
+      "id": "u-dave",
+      "userPrincipalName": "dave@contoso.example",
+      "userDisplayName": "Dave Sales",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone"
+      ]
+    },
+    {
+      "id": "u-erin",
+      "userPrincipalName": "erin@contoso.example",
+      "userDisplayName": "Erin Finance",
+      "userType": "member",
+      "methodsRegistered": [
+        "microsoftAuthenticatorPush",
+        "passKeySynced"
+      ]
+    },
+    {
+      "id": "u-bg1",
+      "userPrincipalName": "breakglass01@contoso.example",
+      "userDisplayName": "Break Glass 01",
+      "userType": "member",
+      "methodsRegistered": [
+        "x509Certificate"
+      ]
+    },
+    {
+      "id": "u-frank",
+      "userPrincipalName": "frank_partner.example#EXT#@contoso.example",
+      "userDisplayName": "Frank (Partner)",
+      "userType": "guest",
+      "methodsRegistered": [
+        "mobilePhone"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "value": [
+    {
+      "id": "u-gina",
+      "userPrincipalName": "gina@fabrikam.example",
+      "userDisplayName": "Gina Exchange",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBound"
+      ]
+    },
+    {
+      "id": "u-hank",
+      "userPrincipalName": "hank@fabrikam.example",
+      "userDisplayName": "Hank Ops",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBound",
+        "microsoftAuthenticatorPush"
+      ]
+    },
+    {
+      "id": "u-ivy",
+      "userPrincipalName": "ivy@fabrikam.example",
+      "userDisplayName": "Ivy HR",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBoundAuthenticator"
+      ]
+    },
+    {
+      "id": "u-jack",
+      "userPrincipalName": "jack@fabrikam.example",
+      "userDisplayName": "Jack Global",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBound"
+      ]
+    },
+    {
+      "id": "u-kim",
+      "userPrincipalName": "kim@vendor.example",
+      "userDisplayName": "Kim Contractor",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeySynced"
+      ]
+    },
+    {
+      "id": "u-liam",
+      "userPrincipalName": "liam@fabrikam.example",
+      "userDisplayName": "Liam Warehouse",
+      "userType": "member",
+      "methodsRegistered": [
+        "sms"
+      ]
+    }
+  ]
+}

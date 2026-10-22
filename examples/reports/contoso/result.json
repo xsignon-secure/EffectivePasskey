@@ -1,0 +1,523 @@
+{
+  "tool": {
+    "name": "EffectivePasskey",
+    "version": "0.1.0"
+  },
+  "tenant": "Contoso (synthetic demo)",
+  "asOf": "2026-10-22",
+  "deadlines": {
+    "main": "2027-02-01",
+    "late": "2027-07-01",
+    "daysToMain": 102,
+    "daysToLate": 252
+  },
+  "summary": {
+    "users": 7,
+    "privileged": 4,
+    "privilegedSyncedAllowed": 3,
+    "smsFebCohort": 2,
+    "smsJulCohort": 1,
+    "fido2State": "enabled",
+    "legacyPolicy": false,
+    "findingsBySeverity": {
+      "critical": 5,
+      "high": 4,
+      "medium": 3,
+      "low": 0,
+      "info": 0
+    },
+    "grade": "F"
+  },
+  "findings": [
+    {
+      "key": "R1|user|alice@contoso.example|Privileged user can register a synced passkey",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "alice@contoso.example",
+      "subjectType": "user",
+      "userId": "u-alice",
+      "cohort": "",
+      "detail": "alice@contoso.example (Global Administrator) can register: Synced passkey, any provider, unattested. Their stricter admin profile is overridden.",
+      "evidence": [
+        "alice@contoso.example holds privileged role(s): Global Administrator",
+        "All users (tenant-wide target) \u2192 scoped to profile 'Default'",
+        "member of group 'Privileged Admins' \u2192 scoped to profile 'Admins - device-bound'",
+        "Profile 'Default': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Profile 'Admins - device-bound': deviceBound; attestation required; allow-list of 3 AAGUID(s)",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Default')",
+        "The stricter profile(s) 'Admins - device-bound' never get a say for this credential."
+      ],
+      "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
+      "key": "R1|user|bob@contoso.example|Privileged user can register a synced passkey",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "bob@contoso.example (Security Administrator) can register: Synced passkey, any provider, unattested. Their stricter admin profile is overridden.",
+      "evidence": [
+        "bob@contoso.example holds privileged role(s): Security Administrator",
+        "All users (tenant-wide target) \u2192 scoped to profile 'Default'",
+        "member of group 'Privileged Admins' \u2192 scoped to profile 'Admins - device-bound'",
+        "Profile 'Default': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Profile 'Admins - device-bound': deviceBound; attestation required; allow-list of 3 AAGUID(s)",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Default')",
+        "The stricter profile(s) 'Admins - device-bound' never get a say for this credential."
+      ],
+      "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
+      "key": "R1|user|carol@contoso.example|Privileged user can register a synced passkey",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "carol@contoso.example",
+      "subjectType": "user",
+      "userId": "u-carol",
+      "cohort": "",
+      "detail": "carol@contoso.example (Privileged Role Administrator (PIM eligible) via group 'Tier 0 Role Holders (role-assignable)') can register: Synced passkey, any provider, unattested. Their stricter admin profile is overridden.",
+      "evidence": [
+        "carol@contoso.example holds privileged role(s): Privileged Role Administrator (PIM eligible) via group 'Tier 0 Role Holders (role-assignable)'",
+        "All users (tenant-wide target) \u2192 scoped to profile 'Default'",
+        "member of 'Tier 0 Role Holders (role-assignable)' \u2192 'Privileged Admins' (nested) \u2192 scoped to profile 'Admins - device-bound'",
+        "Profile 'Default': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Profile 'Admins - device-bound': deviceBound; attestation required; allow-list of 3 AAGUID(s)",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Default')",
+        "The stricter profile(s) 'Admins - device-bound' never get a say for this credential."
+      ],
+      "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
+      "key": "R2|user|carol@contoso.example|Privileged user holds a synced passkey",
+      "rule": "R2",
+      "ruleName": "Weak key already held",
+      "severity": "critical",
+      "title": "Privileged user holds a synced passkey",
+      "subject": "carol@contoso.example",
+      "subjectType": "user",
+      "userId": "u-carol",
+      "cohort": "",
+      "detail": "carol@contoso.example holds 'iPhone passkey' (synced, AAGUID fbfc3007-154e-4ecc-8c0b-6e020557d7bd).",
+      "evidence": [
+        "carol@contoso.example holds privileged role(s): Privileged Role Administrator (PIM eligible) via group 'Tier 0 Role Holders (role-assignable)'",
+        "Registered FIDO2 method 'iPhone passkey', model 'iCloud Keychain', AAGUID fbfc3007-154e-4ecc-8c0b-6e020557d7bd",
+        "Classified as synced; attestation: not attested",
+        "Created 2026-09-03T14:20:00Z"
+      ],
+      "action": "Register a device-bound, attested key for this admin, then remove this passkey."
+    },
+    {
+      "key": "R7|user|bob@contoso.example|Privileged user has no phishing-resistant method",
+      "rule": "R7",
+      "ruleName": "No phishing-resistant method",
+      "severity": "critical",
+      "title": "Privileged user has no phishing-resistant method",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "bob@contoso.example (Security Administrator) has no passkey, Windows Hello for Business or certificate registered.",
+      "evidence": [
+        "bob@contoso.example holds privileged role(s): Security Administrator",
+        "Registered methods: mobilePhone, sms"
+      ],
+      "action": "Issue this admin a device-bound passkey (security key or Authenticator) and require it with an authentication strength."
+    },
+    {
+      "key": "R3|user|bob@contoso.example|SMS/voice-only user",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "high",
+      "title": "SMS/voice-only user",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "1 Feb 2027",
+      "detail": "bob@contoso.example relies only on mobilePhone, sms. Blocking registration prompt from 1 Feb 2027.",
+      "evidence": [
+        "Registered MFA methods: mobilePhone, sms (no non-phone MFA method)",
+        "User category: member",
+        "Deadline cohort: 1 Feb 2027; 102 day(s) from 2026-10-22",
+        "Passkey policy status: Synced passkey, any provider, unattested"
+      ],
+      "action": "Have the user register a passkey (device-bound preferred) before the deadline."
+    },
+    {
+      "key": "R3|user|dave@contoso.example|SMS/voice-only user",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "high",
+      "title": "SMS/voice-only user",
+      "subject": "dave@contoso.example",
+      "subjectType": "user",
+      "userId": "u-dave",
+      "cohort": "1 Feb 2027",
+      "detail": "dave@contoso.example relies only on mobilePhone. Blocking registration prompt from 1 Feb 2027.",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: member",
+        "Deadline cohort: 1 Feb 2027; 102 day(s) from 2026-10-22",
+        "Passkey policy status: Synced passkey, any provider, unattested"
+      ],
+      "action": "Have the user register a passkey (device-bound preferred) before the deadline."
+    },
+    {
+      "key": "R3|user|frank_partner.example#EXT#@contoso.example|SMS/voice-only user",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "high",
+      "title": "SMS/voice-only user",
+      "subject": "frank_partner.example#EXT#@contoso.example",
+      "subjectType": "user",
+      "userId": "u-frank",
+      "cohort": "1 Jul 2027 (external user)",
+      "detail": "frank_partner.example#EXT#@contoso.example relies only on mobilePhone. Blocking registration prompt from 1 Jul 2027 (external user).",
+      "evidence": [
+        "Registered MFA methods: mobilePhone (no non-phone MFA method)",
+        "User category: external",
+        "Deadline cohort: 1 Jul 2027 (external user); 252 day(s) from 2026-10-22",
+        "Passkey policy status: Synced passkey, any provider, unattested"
+      ],
+      "action": "Have the user register a passkey (device-bound preferred) before the deadline."
+    },
+    {
+      "key": "R4|user|bob@contoso.example|Privileged SMS/voice user in an 'all passkey types' profile",
+      "rule": "R4",
+      "ruleName": "Auto-enabled admin",
+      "severity": "high",
+      "title": "Privileged SMS/voice user in an 'all passkey types' profile",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "bob@contoso.example has phone MFA and sits in 'Default', which allows every passkey type with no attestation.",
+      "evidence": [
+        "bob@contoso.example holds privileged role(s): Security Administrator",
+        "Phone methods registered: mobilePhone, sms",
+        "Microsoft auto-enabled passkeys for SMS/voice users on 1 Sep 2026 in a profile allowing all passkey types.",
+        "Profile 'Default': deviceBound + synced; no attestation; no AAGUID restriction"
+      ],
+      "action": "Move this admin into an admin-only device-bound profile and out of the all-types profile's target."
+    },
+    {
+      "key": "R6|profile|Admins - device-bound|Attested profile is bypassed by an overlapping profile",
+      "rule": "R6",
+      "ruleName": "Attestation illusion",
+      "severity": "medium",
+      "title": "Attested profile is bypassed by an overlapping profile",
+      "subject": "Admins - device-bound",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "3 of 3 users scoped to attested profile 'Admins - device-bound' can still register unattested passkeys through another profile.",
+      "evidence": [
+        "Users affected: alice@contoso.example, bob@contoso.example, carol@contoso.example",
+        "Union semantics: the attested profile only constrains users who have no looser profile."
+      ],
+      "action": "Remove the users of 'Admins - device-bound' from the targets of looser profiles, or accept that 'Admins - device-bound' is not an attestation control for them."
+    },
+    {
+      "key": "R8|tenant|tenant|Campaign allows unlimited snoozes",
+      "rule": "R8",
+      "ruleName": "Campaign gap",
+      "severity": "medium",
+      "title": "Campaign allows unlimited snoozes",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "Users can snooze for 1 day(s) indefinitely, so the campaign may never convert them before the deadline.",
+      "evidence": [
+        "snoozeDurationInDays = 1",
+        "enforceRegistrationAfterAllowedSnoozes = false"
+      ],
+      "action": "Set enforceRegistrationAfterAllowedSnoozes to true."
+    },
+    {
+      "key": "R9|user|breakglass01@contoso.example|Privileged user excluded from passkey policy",
+      "rule": "R9",
+      "ruleName": "Excluded but privileged",
+      "severity": "medium",
+      "title": "Privileged user excluded from passkey policy",
+      "subject": "breakglass01@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bg1",
+      "cohort": "",
+      "detail": "breakglass01@contoso.example is excluded, so no passkey can be registered or used. Name suggests a break-glass account: confirm this is intentional.",
+      "evidence": [
+        "breakglass01@contoso.example holds privileged role(s): Global Administrator",
+        "Exclusion: member of group 'Break-glass accounts'",
+        "Exclusion wins over every inclusion (Microsoft Learn)."
+      ],
+      "action": "Confirm the break-glass design (e.g. certificate-based auth or a dedicated FIDO2 key) is documented and tested."
+    }
+  ],
+  "users": [
+    {
+      "id": "u-alice",
+      "upn": "alice@contoso.example",
+      "displayName": "Alice Admin",
+      "category": "member",
+      "privileged": true,
+      "roles": "Global Administrator",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default",
+        "Admins - device-bound"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "YubiKey 5 NFC",
+          "aaguid": "ee882879-721c-4913-9775-3dfcce97072a",
+          "type": "deviceBound",
+          "attested": true
+        }
+      ],
+      "findings": [
+        "R1"
+      ]
+    },
+    {
+      "id": "u-bob",
+      "upn": "bob@contoso.example",
+      "displayName": "Bob SecOps",
+      "category": "member",
+      "privileged": true,
+      "roles": "Security Administrator",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default",
+        "Admins - device-bound"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027",
+      "keys": [],
+      "findings": [
+        "R1",
+        "R3",
+        "R4",
+        "R7"
+      ]
+    },
+    {
+      "id": "u-carol",
+      "upn": "carol@contoso.example",
+      "displayName": "Carol PIM",
+      "category": "member",
+      "privileged": true,
+      "roles": "Privileged Role Administrator (PIM eligible) via group 'Tier 0 Role Holders (role-assignable)'",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default",
+        "Admins - device-bound"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "iPhone passkey",
+          "aaguid": "fbfc3007-154e-4ecc-8c0b-6e020557d7bd",
+          "type": "synced",
+          "attested": false
+        }
+      ],
+      "findings": [
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "id": "u-dave",
+      "upn": "dave@contoso.example",
+      "displayName": "Dave Sales",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-erin",
+      "upn": "erin@contoso.example",
+      "displayName": "Erin Finance",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": []
+    },
+    {
+      "id": "u-frank",
+      "upn": "frank_partner.example#EXT#@contoso.example",
+      "displayName": "Frank (Partner)",
+      "category": "external",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": true,
+      "smsCohort": "1 Jul 2027 (external user)",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    },
+    {
+      "id": "u-bg1",
+      "upn": "breakglass01@contoso.example",
+      "displayName": "Break Glass 01",
+      "category": "member",
+      "privileged": true,
+      "roles": "Global Administrator",
+      "status": "excluded",
+      "rank": 0,
+      "weakestCredential": "Excluded from passkey policy",
+      "syncedAllowed": false,
+      "profiles": [],
+      "permittedBy": [],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": [
+        "R9"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "pp-admin",
+      "name": "Admins - device-bound",
+      "passkeyTypes": [
+        "deviceBound"
+      ],
+      "attestationEnforced": true,
+      "keyRestriction": "allow (3)",
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "usersScoped": 3,
+      "legacy": false
+    },
+    {
+      "id": "pp-default",
+      "name": "Default",
+      "passkeyTypes": [
+        "deviceBound",
+        "synced"
+      ],
+      "attestationEnforced": false,
+      "keyRestriction": "none",
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "usersScoped": 6,
+      "legacy": false
+    }
+  ],
+  "rules": {
+    "R1": {
+      "name": "Overlap weakening",
+      "definition": "A privileged user can register a weaker passkey than the admin profile intends, because at least one scoped profile allows it."
+    },
+    "R2": {
+      "name": "Weak key already held",
+      "definition": "A privileged user already holds a synced or unattested passkey."
+    },
+    "R3": {
+      "name": "Deadline cohort",
+      "definition": "User's only MFA is SMS or voice. They hit a blocking passkey registration prompt on 1 Feb 2027 (Global Admins and external users: 1 Jul 2027)."
+    },
+    "R4": {
+      "name": "Auto-enabled admin",
+      "definition": "A privileged SMS/voice user sits in an 'all passkey types' profile, the shape Microsoft auto-enabled on 1 Sep 2026."
+    },
+    "R5": {
+      "name": "AAGUID trap",
+      "definition": "A user holds a passkey that none of their scoped profiles accepts. Microsoft blocks keys whose AAGUID is not permitted, so they lose sign-in with it."
+    },
+    "R6": {
+      "name": "Attestation illusion",
+      "definition": "A profile is relied on as 'attested' but synced passkeys cannot be attested, or its users can bypass it through another profile."
+    },
+    "R7": {
+      "name": "No phishing-resistant method",
+      "definition": "A privileged user has no phishing-resistant method registered."
+    },
+    "R8": {
+      "name": "Campaign gap",
+      "definition": "The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline."
+    },
+    "R9": {
+      "name": "Excluded but privileged",
+      "definition": "A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all."
+    },
+    "R10": {
+      "name": "Policy hygiene",
+      "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    }
+  },
+  "notes": [
+    "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."
+  ]
+}

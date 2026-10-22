@@ -1,0 +1,88 @@
+{
+  "tenantDisplayName": "Fabrikam (synthetic demo)",
+  "registrationEnforcement": {
+    "authenticationMethodsRegistrationCampaign": {
+      "state": "disabled"
+    }
+  },
+  "authenticationMethodConfigurations": [
+    {
+      "@odata.type": "#microsoft.graph.fido2AuthenticationMethodConfiguration",
+      "id": "Fido2",
+      "state": "enabled",
+      "passkeyProfiles": [
+        {
+          "id": "pp-staff",
+          "displayName": "Workforce - Authenticator only",
+          "passkeyTypes": "deviceBound",
+          "attestationEnforcement": "registrationOnly",
+          "keyRestrictions": {
+            "isEnforced": true,
+            "enforcementType": "allow",
+            "aaGuids": [
+              "90a3ccdf-635c-4729-a248-9b709135078f",
+              "de1e552d-db1d-4423-a619-566b625cdc84"
+            ]
+          }
+        },
+        {
+          "id": "pp-admin",
+          "displayName": "Admins - security keys (attested)",
+          "passkeyTypes": "deviceBound,synced",
+          "attestationEnforcement": "registrationOnly",
+          "keyRestrictions": {
+            "isEnforced": true,
+            "enforcementType": "allow",
+            "aaGuids": [
+              "ee882879-721c-4913-9775-3dfcce97072a"
+            ]
+          }
+        },
+        {
+          "id": "pp-contractors",
+          "displayName": "Contractors",
+          "passkeyTypes": "deviceBound,synced",
+          "attestationEnforcement": "disabled",
+          "keyRestrictions": {
+            "isEnforced": false
+          }
+        },
+        {
+          "id": "pp-pilot",
+          "displayName": "Pilot (unused)",
+          "passkeyTypes": "deviceBound",
+          "attestationEnforcement": "disabled"
+        }
+      ],
+      "includeTargets": [
+        {
+          "id": "g-staff",
+          "targetType": "group",
+          "passkeyProfileIds": [
+            "pp-staff"
+          ]
+        },
+        {
+          "id": "g-admins",
+          "targetType": "group",
+          "passkeyProfileIds": [
+            "pp-admin"
+          ]
+        },
+        {
+          "id": "g-contractors",
+          "targetType": "group",
+          "passkeyProfileIds": [
+            "pp-contractors"
+          ]
+        }
+      ],
+      "excludeTargets": []
+    },
+    {
+      "@odata.type": "#microsoft.graph.smsAuthenticationMethodConfiguration",
+      "id": "Sms",
+      "state": "enabled"
+    }
+  ]
+}

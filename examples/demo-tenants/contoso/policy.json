@@ -1,0 +1,87 @@
+{
+  "tenantDisplayName": "Contoso (synthetic demo)",
+  "registrationEnforcement": {
+    "authenticationMethodsRegistrationCampaign": {
+      "state": "enabled",
+      "snoozeDurationInDays": 1,
+      "enforceRegistrationAfterAllowedSnoozes": false,
+      "includeTargets": [
+        {
+          "id": "all_users",
+          "targetType": "group",
+          "targetedAuthenticationMethod": "passkey"
+        }
+      ],
+      "excludeTargets": []
+    }
+  },
+  "authenticationMethodConfigurations": [
+    {
+      "@odata.type": "#microsoft.graph.fido2AuthenticationMethodConfiguration",
+      "id": "Fido2",
+      "state": "enabled",
+      "isSelfServiceRegistrationAllowed": true,
+      "passkeyProfiles": [
+        {
+          "id": "pp-admin",
+          "displayName": "Admins - device-bound",
+          "passkeyTypes": "deviceBound",
+          "attestationEnforcement": "registrationOnly",
+          "keyRestrictions": {
+            "isEnforced": true,
+            "enforcementType": "allow",
+            "aaGuids": [
+              "cb69481e-8ff7-4039-93ec-0a2729a154a8",
+              "ee882879-721c-4913-9775-3dfcce97072a",
+              "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa"
+            ]
+          }
+        },
+        {
+          "id": "pp-default",
+          "displayName": "Default",
+          "isDefault": true,
+          "passkeyTypes": "deviceBound,synced",
+          "attestationEnforcement": "disabled",
+          "keyRestrictions": {
+            "isEnforced": false,
+            "enforcementType": "allow",
+            "aaGuids": []
+          }
+        }
+      ],
+      "includeTargets": [
+        {
+          "id": "all_users",
+          "targetType": "group",
+          "passkeyProfileIds": [
+            "pp-default"
+          ]
+        },
+        {
+          "id": "g-admins",
+          "targetType": "group",
+          "passkeyProfileIds": [
+            "pp-admin"
+          ]
+        }
+      ],
+      "excludeTargets": [
+        {
+          "id": "g-breakglass",
+          "targetType": "group"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#microsoft.graph.smsAuthenticationMethodConfiguration",
+      "id": "Sms",
+      "state": "enabled"
+    },
+    {
+      "@odata.type": "#microsoft.graph.microsoftAuthenticatorAuthenticationMethodConfiguration",
+      "id": "MicrosoftAuthenticator",
+      "state": "enabled"
+    }
+  ]
+}
