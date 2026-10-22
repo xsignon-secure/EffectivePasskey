@@ -6,7 +6,9 @@
       "members": [
         "u-oscar",
         "u-paula"
-      ]
+      ],
+      "isAssignableToRole": false,
+      "owners": []
     }
   ]
 }

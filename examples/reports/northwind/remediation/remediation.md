@@ -6,10 +6,10 @@ _Proposed changes for human review. EffectivePasskey never applies changes to a 
 
 Re-running the audit on the proposed configuration:
 
-- Findings before: 8 critical, 1 high, 2 medium, 1 low
+- Findings before: 8 critical, 2 high, 2 medium, 1 low
 - Findings after policy changes: 2 critical, 5 high
 - Privileged users who can register a synced passkey: 1 → 0
-- 5 finding(s) resolved by policy changes; the rest need the user tasks below or a human decision.
+- 6 finding(s) resolved by policy changes; the rest need the user tasks below or a human decision.
 
 ## Proposed changes
 

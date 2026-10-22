@@ -32,7 +32,12 @@ FORMATS = {
 
 
 def _as_of(s: str | None) -> date:
-    return date.fromisoformat(s) if s else date.today()
+    if not s:
+        return date.today()
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        raise InputError(f"--as-of must be a date like 2026-10-22, got '{s}'") from None
 
 
 def _audit(args) -> Auditor:

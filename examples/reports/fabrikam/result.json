@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "tenant": "Fabrikam (synthetic demo)",
   "asOf": "2026-10-22",
@@ -20,20 +20,20 @@
     "fido2State": "enabled",
     "legacyPolicy": false,
     "findingsBySeverity": {
-      "critical": 1,
-      "high": 3,
-      "medium": 3,
+      "critical": 0,
+      "high": 5,
+      "medium": 5,
       "low": 2,
       "info": 1
     },
-    "grade": "D"
+    "grade": "C"
   },
   "findings": [
     {
       "key": "R1|user|gina@fabrikam.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
-      "severity": "critical",
+      "severity": "high",
       "title": "Privileged user can register a synced passkey",
       "subject": "gina@fabrikam.example",
       "subjectType": "user",
@@ -48,7 +48,8 @@
         "Profile 'Admins - security keys (attested)': deviceBound + synced; attestation required; allow-list of 1 AAGUID(s)",
         "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
         "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Contractors')",
-        "The stricter profile(s) 'Admins - security keys (attested)' never get a say for this credential."
+        "The stricter profile(s) 'Admins - security keys (attested)' never get a say for this credential.",
+        "Sign-in gate: 'IT Admins: approved security keys only' rejects synced passkeys, so a registered synced passkey cannot be used to sign in to covered apps. Registration is still weaker than intended."
       ],
       "action": "Exclude privileged users from the target(s) 'Contractors' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
@@ -106,6 +107,25 @@
       "action": "Add AAGUID a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa to an allow list that covers this user, or have them register a permitted key before the change lands."
     },
     {
+      "key": "R14|group|Contractors|group",
+      "rule": "R14",
+      "ruleName": "Tamperable policy group",
+      "severity": "high",
+      "title": "Policy group can be changed by non-privileged admins",
+      "subject": "Contractors",
+      "subjectType": "group",
+      "userId": "",
+      "cohort": "",
+      "detail": "'Contractors' targets a passkey profile that allows synced passkeys but is not role-assignable. Adding an admin to it lets them register a synced passkey (R1).",
+      "evidence": [
+        "Group 'Contractors' targets a passkey profile that allows synced passkeys",
+        "isAssignableToRole = false, so Groups Administrators, User Administrators and the group's owners can change its membership",
+        "Dynamic membership rule: user.companyName -eq \"Vendor\" (whoever can edit those user attributes controls membership)",
+        "Adding an admin to it lets them register a synced passkey (R1)."
+      ],
+      "action": "Use a role-assignable group (isAssignableToRole = true, no owners) for this target, so only Privileged Role Administrators can change it."
+    },
+    {
       "key": "R6|profile|Admins - security keys (attested)|Attested profile lists synced passkeys",
       "rule": "R6",
       "ruleName": "Attestation illusion",
@@ -154,6 +174,44 @@
         "Campaign state: disabled"
       ],
       "action": "Enable the registration campaign for the SMS/voice cohort, targeting passkeys, with limited snoozes."
+    },
+    {
+      "key": "R13|user|gina@fabrikam.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "medium",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "gina@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-gina",
+      "cohort": "",
+      "detail": "1 other user(s) can issue gina@fabrikam.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and gina@fabrikam.example is in its target",
+        "isUsableOnce = True; maximum lifetime = 60 min",
+        "1 other user(s) can issue a TAP to them: jack@fabrikam.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R13|user|jack@fabrikam.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "medium",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "jack@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-jack",
+      "cohort": "",
+      "detail": "0 other user(s) can issue jack@fabrikam.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and jack@fabrikam.example is in its target",
+        "isUsableOnce = True; maximum lifetime = 60 min",
+        "0 other user(s) can issue a TAP to them: none listed",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
     },
     {
       "key": "R10|profile|Pilot (unused)|Profile not targeted by any group",
@@ -232,7 +290,8 @@
         }
       ],
       "findings": [
-        "R1"
+        "R1",
+        "R13"
       ]
     },
     {
@@ -285,7 +344,8 @@
         }
       ],
       "findings": [
-        "R5"
+        "R5",
+        "R13"
       ]
     },
     {
@@ -465,7 +525,122 @@
     "R10": {
       "name": "Policy hygiene",
       "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    },
+    "R11": {
+      "name": "Synced passkey at sign-in",
+      "definition": "Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it."
+    },
+    "R12": {
+      "name": "Weak admin sign-in gate",
+      "definition": "An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice."
+    },
+    "R13": {
+      "name": "TAP bootstrap path",
+      "definition": "Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account."
+    },
+    "R14": {
+      "name": "Tamperable policy group",
+      "definition": "A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it."
+    },
+    "R15": {
+      "name": "Migration incomplete",
+      "definition": "Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete."
+    },
+    "R16": {
+      "name": "Sign-in evidence",
+      "definition": "Sign-in logs show admins using SMS, voice or synced passkeys."
     }
+  },
+  "attackPaths": [
+    {
+      "user": "gina@fabrikam.example",
+      "userId": "u-gina",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Exchange Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Contractors, Admins - security keys (attested) (member of 'Vendors EU' \u2192 'Contractors' (nested); member of group 'IT Admins')",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "device-bound key held",
+          "risk": "ok"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Device-bound, approved keys only",
+          "risk": "ok"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "1 other user(s) can issue a TAP",
+          "risk": "bad"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R13"
+      ]
+    },
+    {
+      "user": "jack@fabrikam.example",
+      "userId": "u-jack",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Global Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Admins - security keys (attested) (member of group 'IT Admins')",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Device-bound, attested, allow-listed authenticators only",
+          "risk": "ok"
+        },
+        {
+          "label": "Holds",
+          "value": "device-bound key held",
+          "risk": "ok"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Device-bound, approved keys only",
+          "risk": "ok"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "0 other user(s) can issue a TAP",
+          "risk": "bad"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R5",
+        "R13"
+      ]
+    }
+  ],
+  "coverage": {
+    "conditionalAccess": true,
+    "signIns": false,
+    "temporaryAccessPass": true,
+    "migrationState": true,
+    "groupOwnership": true
   },
   "notes": [
     "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."

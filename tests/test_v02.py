@@ -37,7 +37,7 @@ class RemediationTests(unittest.TestCase):
         before = audit("contoso")
         plan = remediation.build_plan(before)
         o = plan.outcome()
-        self.assertEqual(o["privilegedSyncedBefore"], 3)
+        self.assertEqual(o["privilegedSyncedBefore"], 4)
         self.assertEqual(o["privilegedSyncedAfter"], 0)
         self.assertTrue(any("R1" in c.fixes for c in plan.changes))
         # source tenant is untouched
@@ -117,8 +117,8 @@ class FleetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as out:
             first = os.path.join(out, "m1")
             f1 = run_fleet(DEMOS, first, AS_OF, with_remediation=True)
-            self.assertEqual([r["key"] for r in f1["tenants"]], ["northwind", "contoso", "fabrikam"])
-            self.assertEqual(f1["totals"]["privilegedSyncedAllowed"], 5)
+            self.assertEqual([r["key"] for r in f1["tenants"]], ["contoso", "northwind", "fabrikam"])
+            self.assertEqual(f1["totals"]["privilegedSyncedAllowed"], 6)
             page = read(os.path.join(first, "index.html"))
             self.assertIn('href="contoso/report.html"', page)
             self.assertTrue(os.path.isfile(os.path.join(first, "contoso", "remediation", "remediation.html")))
@@ -155,7 +155,7 @@ class CliAndSiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as out:
             p = self.run_cli("remediate", os.path.join(DEMOS, "contoso"), "-o", out, "--as-of", "2026-10-22")
             self.assertEqual(p.returncode, 0, p.stderr)
-            self.assertIn("3 → 0", p.stdout)
+            self.assertIn("4 → 0", p.stdout)
 
     def test_site_builds(self):
         with tempfile.TemporaryDirectory() as out:

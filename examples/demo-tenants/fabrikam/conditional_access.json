@@ -1,0 +1,49 @@
+{
+  "policies": [
+    {
+      "id": "ca-admins",
+      "displayName": "IT Admins: approved security keys only",
+      "state": "enabled",
+      "conditions": {
+        "users": {
+          "includeGroups": [
+            "g-admins"
+          ]
+        },
+        "applications": {
+          "includeApplications": [
+            "All"
+          ]
+        }
+      },
+      "grantControls": {
+        "operator": "OR",
+        "authenticationStrength": {
+          "id": "st-admin-keys"
+        }
+      }
+    }
+  ],
+  "authenticationStrengths": [
+    {
+      "id": "st-admin-keys",
+      "displayName": "Admin security keys",
+      "policyType": "custom",
+      "allowedCombinations": [
+        "fido2"
+      ],
+      "combinationConfigurations": [
+        {
+          "@odata.type": "#microsoft.graph.fido2CombinationConfiguration",
+          "appliesToCombinations": [
+            "fido2"
+          ],
+          "allowedAAGUIDs": [
+            "ee882879-721c-4913-9775-3dfcce97072a",
+            "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa"
+          ]
+        }
+      ]
+    }
+  ]
+}

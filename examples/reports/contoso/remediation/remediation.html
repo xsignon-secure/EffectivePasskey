@@ -33,6 +33,7 @@ details.f .body{padding:0 16px 14px}
 .subj{color:var(--muted);font-size:13px;word-break:break-all}
 ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
 .action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+p,li,dd,.callout{overflow-wrap:anywhere}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -42,33 +43,52 @@ tr:last-child td{border-bottom:0}
 dl.rules{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}dl.rules dt{font-weight:600}dl.rules dd{margin:0;color:var(--muted)}
 .brandbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--accent);color:var(--muted);font-size:14px}
 .brandlogo{max-height:40px;max-width:180px}
+.paths{display:grid;gap:10px}
+.path{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.path header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.verdict{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:2px 6px;color:#fff}
+.verdict.exposed{background:var(--crit)}.verdict.partial{background:var(--med)}.verdict.protected{background:var(--ok)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.step{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:6px;padding:4px 8px;font-size:12px;max-width:260px}
+.step b{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.step.bad{border-left-color:var(--crit)}.step.warn{border-left-color:var(--med)}.step.ok{border-left-color:var(--ok)}
+.arrow{align-self:center;color:var(--muted)}
+.cov{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}.cov span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted)}
+.cov span.on{color:var(--ok);border-color:var(--ok)}
 footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
 </style></head><body><main>
 
 <h1>Remediation plan: Contoso (synthetic demo)</h1>
 <div class="meta">As of 2026-10-22 · Proposed changes for human review. EffectivePasskey never applies changes to a tenant.</div>
 <div class="tiles">
-<div class="tile"><b>2</b><span>proposed policy changes</span></div>
-<div class="tile"><b>6</b><span>findings resolved in simulation</span></div>
-<div class="tile"><b>3 → 0</b><span>admins who can register a synced passkey</span></div>
-<div class="tile"><b>5</b><span>user tasks</span></div>
+<div class="tile"><b>7</b><span>proposed policy changes</span></div>
+<div class="tile"><b>19</b><span>findings resolved in simulation</span></div>
+<div class="tile"><b>4 → 0</b><span>admins who can register a synced passkey</span></div>
+<div class="tile"><b>6</b><span>user tasks</span></div>
 </div>
-<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 5 critical, 4 high, 3 medium.
-After policy changes: 2 critical, 4 high, 1 medium. The proposed export is in <code>proposed-export/</code>; analyze it to verify.</div>
-<div class='callout'><strong>Introduced by the proposal:</strong><ul><li>[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example</li></ul>An R5 here usually means a weak key the user holds stops working once the loose profile no longer covers them. Complete that user's task first.</div>
+<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 13 critical, 12 high, 4 medium, 1 info.
+After policy changes: 4 critical, 6 high, 2 medium, 1 info. The proposed export is in <code>proposed-export/</code>; analyze it to verify.</div>
+<div class='callout'><strong>Introduced by the proposal:</strong><ul><li>[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example</li><li>[high] R5 Registered passkey not accepted by any scoped profile: erin@contoso.example</li></ul>An R5 here usually means a weak key the user holds stops working once the loose profile no longer covers them. Complete that user's task first.</div>
 <h2>Proposed changes</h2><details class='f' open><summary><span class='rule'>C1</span><strong>Retarget profile(s) &#x27;Default&#x27; from &#x27;All users&#x27; to a group without admins</strong><span class='subj'>fixes R1, R4, R6</span></summary><div class='body'><p>Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.</p><div class='meta'>Before</div><pre>{
   &quot;target&quot;: &quot;All users&quot;,
   &quot;targetId&quot;: &quot;all_users&quot;,
   &quot;privilegedUsersCovered&quot;: [
     &quot;alice@contoso.example&quot;,
     &quot;bob@contoso.example&quot;,
-    &quot;carol@contoso.example&quot;
+    &quot;carol@contoso.example&quot;,
+    &quot;erin@contoso.example&quot;
   ]
 }</pre><div class='meta'>After</div><pre>{
   &quot;target&quot;: &quot;All users (excluding privileged users)&quot;,
   &quot;targetId&quot;: &quot;ep-proposed-all-users-excluding-privileged-users&quot;,
-  &quot;members&quot;: 3
-}</pre><p class='meta'>The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it.</p></div></details><details class='f' open><summary><span class='rule'>C2</span><strong>Point the registration campaign at passkeys for all users, with limited snoozes</strong><span class='subj'>fixes R8</span></summary><div class='body'><p>3 SMS/voice-only user(s) need a nudge before their deadline.</p><div class='meta'>Before</div><pre>{
+  &quot;members&quot;: 2
+}</pre><p class='meta'>The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it.</p></div></details><details class='f' open><summary><span class='rule'>C2</span><strong>Scope privileged users to &#x27;Admins - device-bound&#x27;</strong><span class='subj'>fixes R1</span></summary><div class='body'><p>Every admin should be scoped to the strict profile, and only to it.</p><div class='meta'>After</div><pre>{
+  &quot;target&quot;: &quot;Privileged users (passkey admin profile)&quot;,
+  &quot;profile&quot;: &quot;Admins - device-bound&quot;,
+  &quot;users&quot;: [
+    &quot;erin@contoso.example&quot;
+  ]
+}</pre><p class='meta'>Prefer targeting your existing role-assignable admin group instead of this snapshot group.</p></div></details><details class='f' open><summary><span class='rule'>C3</span><strong>Point the registration campaign at passkeys for all users, with limited snoozes</strong><span class='subj'>fixes R8</span></summary><div class='body'><p>3 SMS/voice-only user(s) need a nudge before their deadline.</p><div class='meta'>Before</div><pre>{
   &quot;state&quot;: &quot;enabled&quot;,
   &quot;snoozeDurationInDays&quot;: 1,
   &quot;enforceRegistrationAfterAllowedSnoozes&quot;: false,
@@ -84,9 +104,57 @@ After policy changes: 2 critical, 4 high, 1 medium. The proposed export is in <c
     &quot;All users&quot;
   ],
   &quot;targetedAuthenticationMethod&quot;: &quot;passkey&quot;
-}</pre><p class='meta'>Check the targetedAuthenticationMethod value your tenant&#x27;s Graph version accepts.</p></div></details>
+}</pre><p class='meta'>Check the targetedAuthenticationMethod value your tenant&#x27;s Graph version accepts.</p></div></details><details class='f' open><summary><span class='rule'>C4</span><strong>Require &#x27;Admins - device-bound keys only&#x27; for admins on all apps</strong><span class='subj'>fixes R11, R12</span></summary><div class='body'><p>Conditional Access must be satisfied by every applicable policy, so one strict policy closes the sign-in gap left by plain MFA or the built-in phishing-resistant strength (which accepts synced passkeys).</p><div class='meta'>Before</div><pre>{
+  &quot;adminsWithWeakGate&quot;: [
+    &quot;alice@contoso.example&quot;,
+    &quot;bob@contoso.example&quot;,
+    &quot;carol@contoso.example&quot;,
+    &quot;erin@contoso.example&quot;
+  ]
+}</pre><div class='meta'>After</div><pre>{
+  &quot;authenticationStrength&quot;: {
+    &quot;name&quot;: &quot;Admins - device-bound keys only&quot;,
+    &quot;allowedCombinations&quot;: [
+      &quot;fido2&quot;,
+      &quot;windowsHelloForBusiness&quot;,
+      &quot;x509CertificateMultiFactor&quot;
+    ],
+    &quot;fido2AllowedAAGUIDs&quot;: [
+      &quot;a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa&quot;,
+      &quot;cb69481e-8ff7-4039-93ec-0a2729a154a8&quot;,
+      &quot;ee882879-721c-4913-9775-3dfcce97072a&quot;
+    ]
+  },
+  &quot;policy&quot;: &quot;Admins: device-bound keys only (EffectivePasskey)&quot;,
+  &quot;target&quot;: &quot;Privileged users (sign-in and TAP)&quot;,
+  &quot;breakGlassExcluded&quot;: &quot;not targeted&quot;
+}</pre><p class='meta'>Roll out in report-only first and check sign-in logs for admins without an approved key.</p><p class='meta'>Emergency-access accounts are left out on purpose; protect them separately.</p></div></details><details class='f' open><summary><span class='rule'>C5</span><strong>Exclude admins from Temporary Access Pass and make TAP single-use, 60 minutes</strong><span class='subj'>fixes R13</span></summary><div class='body'><p>Anyone who can issue an admin a TAP can register a passkey on that account.</p><div class='meta'>Before</div><pre>{
+  &quot;isUsableOnce&quot;: false,
+  &quot;maximumLifetimeInMinutes&quot;: 480,
+  &quot;excluded&quot;: []
+}</pre><div class='meta'>After</div><pre>{
+  &quot;isUsableOnce&quot;: true,
+  &quot;maximumLifetimeInMinutes&quot;: 60,
+  &quot;excluded&quot;: [
+    &quot;Privileged users (TAP excluded)&quot;
+  ]
+}</pre><p class='meta'>Issue admin TAPs only through a documented, two-person process, by temporarily removing the admin from this group.</p></div></details><details class='f' open><summary><span class='rule'>C6</span><strong>Replace &#x27;CA exclusions (legacy apps)&#x27; with a role-assignable group</strong><span class='subj'>fixes R14</span></summary><div class='body'><p>Only Privileged Role Administrators can change a role-assignable group, so owners and Groups Administrators can no longer move admins in or out of policy scope.</p><div class='meta'>Before</div><pre>{
+  &quot;group&quot;: &quot;CA exclusions (legacy apps)&quot;,
+  &quot;isAssignableToRole&quot;: false,
+  &quot;owners&quot;: 1,
+  &quot;membershipRule&quot;: null
+}</pre><div class='meta'>After</div><pre>{
+  &quot;group&quot;: &quot;CA exclusions (legacy apps) (role-assignable)&quot;,
+  &quot;isAssignableToRole&quot;: true,
+  &quot;owners&quot;: 0,
+  &quot;members&quot;: 1
+}</pre><p class='meta'>isAssignableToRole can only be set when a group is created, so this is a new group.</p></div></details><details class='f' open><summary><span class='rule'>C7</span><strong>Complete the authentication methods migration</strong><span class='subj'>fixes R15</span></summary><div class='body'><p>Legacy MFA and SSPR settings keep governing SMS and voice until the migration is marked complete.</p><div class='meta'>Before</div><pre>{
+  &quot;policyMigrationState&quot;: &quot;migrationInProgress&quot;
+}</pre><div class='meta'>After</div><pre>{
+  &quot;policyMigrationState&quot;: &quot;migrationComplete&quot;
+}</pre><p class='meta'>Check that the methods policy enables everything users rely on before you complete it.</p></div></details>
 <h2>User tasks</h2>
-<div class="tablewrap"><table><thead><tr><th>User</th><th>Task</th><th>Rule</th><th>Due</th></tr></thead><tbody><tr><td>carol@contoso.example</td><td>Register a device-bound key, then delete the weak passkey</td><td>R2</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Issue and register a device-bound passkey</td><td>R7</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>dave@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>frank_partner.example#EXT#@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-07-01</td></tr></tbody></table></div>
-<h2>Still open after the proposal</h2><ul><li>[critical] R2 Privileged user holds a synced passkey: carol@contoso.example</li><li>[critical] R7 Privileged user has no phishing-resistant method: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: dave@contoso.example</li><li>[high] R3 SMS/voice-only user: frank_partner.example#EXT#@contoso.example</li><li>[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example</li></ul>
+<div class="tablewrap"><table><thead><tr><th>User</th><th>Task</th><th>Rule</th><th>Due</th></tr></thead><tbody><tr><td>carol@contoso.example</td><td>Register a device-bound key, then delete the weak passkey</td><td>R2</td><td>now</td></tr><tr><td>erin@contoso.example</td><td>Register a device-bound key, then delete the weak passkey</td><td>R2</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Issue and register a device-bound passkey</td><td>R7</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>dave@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>frank_partner.example#EXT#@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-07-01</td></tr></tbody></table></div>
+<h2>Still open after the proposal</h2><ul><li>[critical] R16 Admin signed in with a synced passkey: carol@contoso.example</li><li>[critical] R2 Privileged user holds a synced passkey: carol@contoso.example</li><li>[critical] R2 Privileged user holds a synced passkey: erin@contoso.example</li><li>[critical] R7 Privileged user has no phishing-resistant method: bob@contoso.example</li><li>[high] R16 Admin still signs in with SMS or voice: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: dave@contoso.example</li><li>[high] R3 SMS/voice-only user: frank_partner.example#EXT#@contoso.example</li><li>[info] R16 Users still signing in with SMS or voice: tenant</li><li>[medium] R12 Admin sign-in not gated by any enforced MFA policy: breakglass01@contoso.example</li><li>[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example</li></ul>
 <footer><p>Generated by EffectivePasskey. Changes are proposals for human approval and are never applied automatically.</p></footer>
 </main></body></html>

@@ -153,6 +153,30 @@
       "notes": [
         "Check the targetedAuthenticationMethod value your tenant's Graph version accepts."
       ]
+    },
+    {
+      "id": "C7",
+      "kind": "policy",
+      "title": "Exclude admins from Temporary Access Pass and make TAP single-use, 60 minutes",
+      "rationale": "Anyone who can issue an admin a TAP can register a passkey on that account.",
+      "fixes": [
+        "R13"
+      ],
+      "before": {
+        "isUsableOnce": true,
+        "maximumLifetimeInMinutes": 60,
+        "excluded": []
+      },
+      "after": {
+        "isUsableOnce": true,
+        "maximumLifetimeInMinutes": 60,
+        "excluded": [
+          "Privileged users (TAP excluded)"
+        ]
+      },
+      "notes": [
+        "Issue admin TAPs only through a documented, two-person process, by temporarily removing the admin from this group."
+      ]
     }
   ],
   "userTasks": [
@@ -165,9 +189,12 @@
   ],
   "outcome": {
     "resolved": [
-      "[critical] R1 Privileged user can register a synced passkey: gina@fabrikam.example",
+      "[high] R1 Privileged user can register a synced passkey: gina@fabrikam.example",
+      "[high] R14 Policy group can be changed by non-privileged admins: Contractors",
       "[high] R5 Registered passkey not accepted by any scoped profile: hank@fabrikam.example",
       "[high] R5 Registered passkey not accepted by any scoped profile: jack@fabrikam.example",
+      "[medium] R13 Temporary Access Pass can bootstrap a new passkey on an admin: gina@fabrikam.example",
+      "[medium] R13 Temporary Access Pass can bootstrap a new passkey on an admin: jack@fabrikam.example",
       "[medium] R6 Attested profile is bypassed by an overlapping profile: Admins - security keys (attested)",
       "[medium] R6 Attested profile lists synced passkeys: Admins - security keys (attested)",
       "[medium] R8 Registration campaign is off: tenant"
@@ -180,9 +207,8 @@
     ],
     "introduced": [],
     "beforeBySeverity": {
-      "critical": 1,
-      "high": 3,
-      "medium": 3,
+      "high": 5,
+      "medium": 5,
       "low": 2,
       "info": 1
     },

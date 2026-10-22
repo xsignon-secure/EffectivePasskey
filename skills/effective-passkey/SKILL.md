@@ -41,6 +41,10 @@ only thing that beats inclusion.
    - Then critical findings, each in one plain sentence plus its action. Quote the evidence chain
      when the user asks "why".
    - For a single user, run `effective-passkey explain <dir> <upn>` and walk through the chain.
+   - Walk each admin's attack path: what they can register (profiles union), what Conditional Access lets
+     them sign in with (policies intersect), whether a Temporary Access Pass could bootstrap a new
+     passkey, and what the sign-in logs show. If the report's "Inputs analyzed" shows Conditional Access or
+     sign-ins missing, say R11-R16 were not evaluated and suggest re-running the collector.
    Rule meanings are in `references/rules.md`.
 
 6. **Remediation.** Run `effective-passkey remediate <dir> -o <plan-dir>`. It proposes changes,

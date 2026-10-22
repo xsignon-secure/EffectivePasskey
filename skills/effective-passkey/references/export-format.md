@@ -30,6 +30,20 @@ every group that holds a privileged role. `all_users` needs no entry.
 `userDisplayName`, `userType`, `methodsRegistered`. External users are detected from `#EXT#` in the
 UPN (or `identityCategory: "external"`); other guests count as internal guests.
 
+## Optional inputs
+
+These unlock R11 to R16. Without them those rules stay silent and the report lists which inputs it had.
+
+- **policy.json** may also carry `policyMigrationState` and a `temporaryAccessPass` method configuration
+  (`state`, `includeTargets`, `excludeTargets`, `isUsableOnce`, `defaultLifetimeInMinutes`, `maximumLifetimeInMinutes`).
+- **groups.json** entries may carry `isAssignableToRole`, `owners` (ids) and `membershipRule`.
+- **conditional_access.json**: `{"policies": [...], "authenticationStrengths": [...]}` from
+  `GET /identity/conditionalAccess/policies` and `.../authenticationStrength/policies`, with each custom strength's
+  `combinationConfigurations` (a `fido2CombinationConfiguration` carries `allowedAAGUIDs`). Built-in strengths do not
+  need to be listed.
+- **signins.json**: `GET /beta/auditLogs/signIns` rows with `userId`, `createdDateTime`, `appDisplayName`, `status`
+  and `authenticationDetails[].authenticationMethod`.
+
 ## roles.json
 ```json
 {
@@ -37,6 +51,8 @@ UPN (or `identityCategory: "external"`); other guests count as internal guests.
   "fido2Methods": {"<userId>": [{"id", "displayName", "aaGuid", "attestationLevel", "createdDateTime"}]}
 }
 ```
-`principalId` may be a group; it is expanded. `fido2Methods` covers privileged users and the
-SMS/voice cohort. A key may carry `passkeyType` explicitly; otherwise it is classified from a list
+`principalId` may be a group; it is expanded. `fido2Methods` covers privileged users, the
+SMS/voice cohort and, when an AAGUID allow list is enforced, every passkey holder. Any array may be
+written as a bare object when it has one item (PowerShell's `ConvertTo-Json` does this); it is read as
+a one-item list. A key may carry `passkeyType` explicitly; otherwise it is classified from a list
 of known AAGUIDs (extend with `--aaguid-map map.json`, `{"<aaguid>": ["Name", "synced"]}`).

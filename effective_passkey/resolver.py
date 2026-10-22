@@ -13,6 +13,7 @@ those profiles allows.
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass, field
 
 from .constants import ALL_USERS_TARGET
@@ -125,18 +126,32 @@ class Resolver:
             for m in g.members:
                 parents.setdefault(m, []).append(g.id)
 
+        # Ancestors of each group with the shortest path, computed once per group (BFS),
+        # so users sharing groups do not repeat the walk.
+        ancestors: dict[str, dict[str, list[str]]] = {}
+
+        def walk(start: str) -> dict[str, list[str]]:
+            if start not in ancestors:
+                found: dict[str, list[str]] = {}
+                frontier = deque([(start, [start])])
+                while frontier:
+                    gid, path = frontier.popleft()
+                    if gid in found:
+                        continue
+                    found[gid] = path
+                    for parent in parents.get(gid, []):
+                        if parent not in found:
+                            frontier.append((parent, path + [parent]))
+                ancestors[start] = found
+            return ancestors[start]
+
         index: dict[str, dict[str, list[str]]] = {}
         for uid in self.tenant.users:
-            found: dict[str, list[str]] = {}
-            frontier = [(gid, [gid]) for gid in parents.get(uid, [])]
-            while frontier:
-                gid, path = frontier.pop(0)
-                if gid in found:
-                    continue
-                found[gid] = path
-                for parent in parents.get(gid, []):
-                    if parent not in found:
-                        frontier.append((parent, path + [parent]))
+            found = {}
+            for direct in parents.get(uid, []):
+                for gid, path in walk(direct).items():
+                    if gid not in found or len(path) < len(found[gid]):
+                        found[gid] = path
             index[uid] = found
         return index
 

@@ -16,7 +16,7 @@ import shutil
 from dataclasses import dataclass, field
 
 from .constants import ALL_USERS_TARGET
-from .model import PasskeyProfile, Target, Tenant, Group
+from .model import AuthStrength, CaPolicy, Group, PasskeyProfile, Target, Tenant
 from .resolver import RANK_LABELS, Resolver, profile_rank
 from .rules import Auditor, phone_only, deadline_for
 
@@ -73,7 +73,7 @@ class Planner:
         while gid in self.tenant.groups:
             gid = f"{PROPOSED_PREFIX}{_slug(name)}-{n}"
             n += 1
-        g = Group(id=gid, name=name, members=sorted(members))
+        g = Group(id=gid, name=name, members=sorted(members), role_assignable=True)
         self.tenant.groups[gid] = g
         return g
 
@@ -81,7 +81,11 @@ class Planner:
         return sorted(self.tenant.users[u].label for u in uids if u in self.tenant.users)
 
     def _resolver(self) -> Resolver:
-        return Resolver(self.tenant)
+        # Membership only depends on groups, so reuse the index until a group is added or changed
+        key = tuple((g.id, len(g.members)) for g in self.tenant.groups.values())
+        if getattr(self, "_resolver_key", None) != key:
+            self._resolver_cache, self._resolver_key = Resolver(self.tenant), key
+        return self._resolver_cache
 
     def _covered_users(self, target: Target) -> set[str]:
         r = self._resolver()
@@ -99,6 +103,10 @@ class Planner:
         self.give_sms_users_a_path()
         self.fix_aaguid_traps()
         self.fix_campaign()
+        self.gate_admin_signin()
+        self.close_tap_path()
+        self.harden_policy_groups()
+        self.finish_migration()
         self.collect_user_tasks()
         after = Auditor(self.tenant, self.before.as_of)
         after.run()
@@ -143,7 +151,7 @@ class Planner:
             u = pol.user
             if pol.status != "excluded":
                 continue
-            if any(w in u.label.lower() for w in ("break", "glass", "emergency", "bg-")):
+            if u.looks_breakglass:
                 continue  # break-glass stays excluded; R9 asks a human to confirm
             for m in pol.exclusions:
                 if m.path:
@@ -164,7 +172,8 @@ class Planner:
             if not loose:
                 continue
             covered = self._covered_users(t)
-            admins = {u for u in covered & self.priv if self._resolver().resolve(self.tenant.users[u]).status != "excluded"}
+            r = self._resolver()
+            admins = {u for u in covered & self.priv if r.resolve(self.tenant.users[u]).status != "excluded"}
             if not admins:
                 continue
             old_name = self.tenant.group_name(t.id)
@@ -314,6 +323,121 @@ class Planner:
                       f"{len(cohort)} SMS/voice-only user(s) need a nudge before their deadline.",
                       ["R8"], before=before, after=after,
                       notes=["Check the targetedAuthenticationMethod value your tenant's Graph version accepts."])
+
+    def _admin_ids(self, include_breakglass=False) -> list[str]:
+        return sorted(u for u in self.priv if include_breakglass or not self.tenant.users[u].looks_breakglass)
+
+    def _admin_group(self) -> Group:
+        """One role-assignable group of admins for TAP and CA scoping, created once."""
+        for g in self.tenant.groups.values():
+            if g.id == PROPOSED_PREFIX + "privileged-users-sign-in-and-tap":
+                return g
+        return self._new_group("Privileged users (sign-in and TAP)", self._admin_ids())
+
+    def gate_admin_signin(self):
+        t = self.tenant
+        if t.ca_policies is None:
+            return
+        probe = Auditor(t, self.before.as_of)
+        probe.run()
+        weak = [u for u in self._admin_ids() if probe.deep.gate(t.users[u]).evaluated
+                and (probe.deep.gate(t.users[u]).accepts_synced or probe.deep.gate(t.users[u]).accepts_phone
+                     or not probe.deep.gate(t.users[u]).applicable)]
+        if not weak:
+            return
+        # Allow list: the admin profile's approved keys, else device-bound keys admins already hold.
+        admin_profiles = [p for p in t.fido2.profiles.values() if 0 < profile_rank(p) <= 2 and p.key_restriction_enforced]
+        aaguids = set().union(*(p.aaguids for p in admin_profiles)) if admin_profiles else set()
+        if not aaguids:
+            aaguids = {k.aaguid for uid in self.priv for k in t.users[uid].keys
+                       if k.aaguid and k.passkey_type == "deviceBound" and k.attested is not False}
+        st = AuthStrength(id=PROPOSED_PREFIX + "admin-strength", name="Admins - device-bound keys only",
+                          combinations={"fido2", "windowsHelloForBusiness", "x509CertificateMultiFactor"},
+                          fido2_aaguids=set(aaguids) if aaguids else None)
+        t.strengths[st.id] = st
+        g = self._admin_group()
+        ca = CaPolicy(id=PROPOSED_PREFIX + "ca-admins", name="Admins: device-bound keys only (EffectivePasskey)",
+                      state="enabled", include_users=[], exclude_users=[], include_groups=[g.id], exclude_groups=[],
+                      include_roles=[], exclude_roles=[], apps=["All"], builtin_controls=[], strength_id=st.id,
+                      operator="AND")
+        t.ca_policies.append(ca)
+        self._add("conditional_access", f"Require '{st.name}' for admins on all apps",
+                  "Conditional Access must be satisfied by every applicable policy, so one strict policy closes the "
+                  "sign-in gap left by plain MFA or the built-in phishing-resistant strength (which accepts synced passkeys).",
+                  ["R11", "R12"],
+                  before={"adminsWithWeakGate": self._labels(weak)},
+                  after={"authenticationStrength": {"name": st.name, "allowedCombinations": sorted(st.combinations),
+                                                    "fido2AllowedAAGUIDs": sorted(aaguids) or "any (add your keys)"},
+                         "policy": ca.name, "target": g.name, "breakGlassExcluded": "not targeted"},
+                  notes=["Roll out in report-only first and check sign-in logs for admins without an approved key.",
+                         "Emergency-access accounts are left out on purpose; protect them separately."]
+                        + ([] if aaguids else ["No approved AAGUIDs found: add your security key AAGUIDs, or synced passkeys stay accepted."]))
+
+    def close_tap_path(self):
+        tap = self.tenant.tap
+        if not (tap.present and tap.enabled):
+            return
+        r = self._resolver()
+        exposed = [u for u in self._admin_ids(include_breakglass=True)
+                   if any(r.membership(self.tenant.users[u], x) for x in tap.include_targets)
+                   and not any(r.membership(self.tenant.users[u], x) for x in tap.exclude_targets)]
+        if not exposed:
+            return
+        before = {"isUsableOnce": tap.usable_once, "maximumLifetimeInMinutes": tap.max_lifetime,
+                  "excluded": [self.tenant.group_name(x.id) for x in tap.exclude_targets]}
+        g = self._new_group("Privileged users (TAP excluded)", exposed)
+        tap.exclude_targets.append(Target(id=g.id))
+        tap.usable_once = True
+        tap.max_lifetime = min(tap.max_lifetime or 60, 60)
+        tap.default_lifetime = min(tap.default_lifetime or 60, tap.max_lifetime)
+        self._add("policy", "Exclude admins from Temporary Access Pass and make TAP single-use, 60 minutes",
+                  "Anyone who can issue an admin a TAP can register a passkey on that account.", ["R13"],
+                  before=before, after={"isUsableOnce": True, "maximumLifetimeInMinutes": tap.max_lifetime,
+                                        "excluded": [self.tenant.group_name(x.id) for x in tap.exclude_targets]},
+                  notes=["Issue admin TAPs only through a documented, two-person process, by temporarily removing the admin from this group."])
+
+    def _references(self):
+        """Every place a group id is referenced by passkey, TAP or CA policy."""
+        t = self.tenant
+        refs = list(t.fido2.include_targets) + list(t.fido2.exclude_targets)
+        if t.tap.present:
+            refs += t.tap.include_targets + t.tap.exclude_targets
+        return refs
+
+    def harden_policy_groups(self):
+        probe = Auditor(self.tenant, self.before.as_of)
+        probe.run()
+        risky = sorted({gid for gid, *_ in probe.deep._risky_groups()
+                        if gid in self.tenant.groups and self.tenant.groups[gid].role_assignable is False})
+        for gid in risky:
+            old = self.tenant.groups[gid]
+            members = list(old.members)
+            new = self._new_group(f"{old.name} (role-assignable)", members)
+            for t in self._references():
+                if t.id == gid:
+                    t.id = new.id
+            for p in self.tenant.ca_policies or []:
+                p.exclude_groups = [new.id if x == gid else x for x in p.exclude_groups]
+                p.include_groups = [new.id if x == gid else x for x in p.include_groups]
+            self._add("group", f"Replace '{old.name}' with a role-assignable group",
+                      "Only Privileged Role Administrators can change a role-assignable group, so owners and Groups "
+                      "Administrators can no longer move admins in or out of policy scope.", ["R14"],
+                      before={"group": old.name, "isAssignableToRole": False, "owners": len(old.owners),
+                              "membershipRule": old.membership_rule or None},
+                      after={"group": new.name, "isAssignableToRole": True, "owners": 0, "members": len(members)},
+                      notes=["isAssignableToRole can only be set when a group is created, so this is a new group."]
+                            + (["The old group was dynamic; role-assignable groups can be dynamic too, but review who can "
+                                "edit the attributes in its rule."] if old.membership_rule else []))
+
+    def finish_migration(self):
+        state = self.tenant.migration_state
+        if not state or state == "migrationComplete":
+            return
+        self.tenant.migration_state = "migrationComplete"
+        self._add("policy", "Complete the authentication methods migration",
+                  "Legacy MFA and SSPR settings keep governing SMS and voice until the migration is marked complete.",
+                  ["R15"], before={"policyMigrationState": state}, after={"policyMigrationState": "migrationComplete"},
+                  notes=["Check that the methods policy enables everything users rely on before you complete it."])
 
     def collect_user_tasks(self):
         for f in self.before.findings:
@@ -483,6 +607,39 @@ def _raw_target(t: Target, with_profiles=True) -> dict:
     return d
 
 
+def proposed_conditional_access(plan: Plan) -> dict | None:
+    t = plan.tenant
+    if t.ca_policies is None:
+        return None
+    raw = copy.deepcopy(t.raw_ca) if t.raw_ca else {"policies": [], "authenticationStrengths": []}
+    by_id = {p.get("id"): p for p in raw.get("policies", [])}
+    out = []
+    for p in t.ca_policies:
+        base = copy.deepcopy(by_id.get(p.id, {}))
+        base.update({"id": p.id, "displayName": p.name, "state": p.state})
+        cond = base.setdefault("conditions", {})
+        cond["users"] = {"includeUsers": p.include_users, "excludeUsers": p.exclude_users,
+                         "includeGroups": p.include_groups, "excludeGroups": p.exclude_groups,
+                         "includeRoles": p.include_roles, "excludeRoles": p.exclude_roles}
+        cond.setdefault("applications", {})["includeApplications"] = p.apps
+        grant = {"operator": p.operator, "builtInControls": p.builtin_controls}
+        if p.strength_id:
+            grant["authenticationStrength"] = {"id": p.strength_id}
+        base["grantControls"] = grant
+        out.append(base)
+    strengths = []
+    for st in t.strengths.values():
+        if st.builtin:
+            continue
+        d = {"id": st.id, "displayName": st.name, "policyType": "custom", "allowedCombinations": sorted(st.combinations)}
+        if st.fido2_aaguids is not None:
+            d["combinationConfigurations"] = [{"@odata.type": "#microsoft.graph.fido2CombinationConfiguration",
+                                               "appliesToCombinations": ["fido2"],
+                                               "allowedAAGUIDs": sorted(st.fido2_aaguids)}]
+        strengths.append(d)
+    return {"policies": out, "authenticationStrengths": strengths}
+
+
 def proposed_policy(plan: Plan) -> dict:
     t = plan.tenant
     raw = copy.deepcopy(t.raw_policy)
@@ -497,6 +654,15 @@ def proposed_policy(plan: Plan) -> dict:
             cfg["excludeTargets"] = [_raw_target(x, False) for x in f.exclude_targets]
             for legacy_key in ("isAttestationEnforced", "keyRestrictions"):
                 cfg.pop(legacy_key, None)
+    tap = t.tap
+    for cfg in configs:
+        if tap.present and "temporaryaccesspass" in (cfg.get("@odata.type", "") + " " + str(cfg.get("id", ""))).lower():
+            cfg.update({"state": tap.state, "isUsableOnce": tap.usable_once,
+                        "defaultLifetimeInMinutes": tap.default_lifetime, "maximumLifetimeInMinutes": tap.max_lifetime,
+                        "includeTargets": [_raw_target(x, False) for x in tap.include_targets],
+                        "excludeTargets": [_raw_target(x, False) for x in tap.exclude_targets]})
+    if t.migration_state:
+        raw["policyMigrationState"] = t.migration_state
     c = t.campaign
     if c.present:
         raw.setdefault("registrationEnforcement", {})["authenticationMethodsRegistrationCampaign"] = {
@@ -529,11 +695,25 @@ def write_plan(plan: Plan, out_dir: str, brand=None) -> list[str]:
     os.makedirs(proposed, exist_ok=True)
     with open(os.path.join(proposed, "policy.json"), "w", encoding="utf-8") as fh:
         json.dump(proposed_policy(plan), fh, indent=2)
-    groups = [{"id": g.id, "displayName": g.name, "members": g.members} for g in plan.tenant.groups.values()]
+    groups = []
+    for g in plan.tenant.groups.values():
+        d = {"id": g.id, "displayName": g.name, "members": g.members}
+        if g.role_assignable is not None:
+            d["isAssignableToRole"] = g.role_assignable
+        if g.owners:
+            d["owners"] = g.owners
+        if g.membership_rule:
+            d["membershipRule"] = g.membership_rule
+        groups.append(d)
     with open(os.path.join(proposed, "groups.json"), "w", encoding="utf-8") as fh:
         json.dump({"value": groups}, fh, indent=2)
     src = plan.tenant.source_dir
-    for name in ("users.json", "roles.json"):
-        shutil.copyfile(os.path.join(src, name), os.path.join(proposed, name))
+    for name in ("users.json", "roles.json", "signins.json"):
+        if os.path.isfile(os.path.join(src, name)):
+            shutil.copyfile(os.path.join(src, name), os.path.join(proposed, name))
+    ca = proposed_conditional_access(plan)
+    if ca is not None:
+        with open(os.path.join(proposed, "conditional_access.json"), "w", encoding="utf-8") as fh:
+            json.dump(ca, fh, indent=2)
     written.append(proposed + os.sep)
     return written

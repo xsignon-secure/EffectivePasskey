@@ -48,7 +48,7 @@ Run the read-only collector yourself (PowerShell 7 + `Microsoft.Graph.Authentica
 ./collector/Export-EffectivePasskeyData.ps1 -OutputPath ./my-export
 ```
 
-It uses delegated scopes `Policy.Read.All`, `UserAuthenticationMethod.Read.All`,
+It also writes `conditional_access.json` and, with `-IncludeSignIns`, `signins.json`. It uses delegated scopes `Policy.Read.All`, `UserAuthenticationMethod.Read.All`,
 `GroupMember.Read.All`, `RoleManagement.Read.Directory` and `AuditLog.Read.All` (for the
 `userRegistrationDetails` report), and changes nothing. You can also build the four files from Graph
 Explorer; see [docs/export-format.md](docs/export-format.md).
@@ -93,6 +93,15 @@ lists, tighten the registration campaign. It applies them to a copy, re-runs eve
 what still needs a user action, and anything the change would break (for example an admin's synced key that stops
 working). Break-glass accounts are left alone. A human makes the change in the portal.
 
+## Registration is a union, sign-in is an intersection
+
+Passkey profiles combine permissively: a passkey can be registered if any scoped profile allows it. Conditional Access
+combines strictly: every applicable policy must be satisfied at sign-in. EffectivePasskey evaluates both and draws an
+**attack path** per admin: role, passkey scope, what they can register, what they hold, what Conditional Access lets
+them sign in with, who could bootstrap a new credential with a Temporary Access Pass, and what they actually signed in
+with. R11 to R16 need the optional `conditional_access.json` and `signins.json`; without them those rules stay silent
+and the report says which inputs it had.
+
 ## What it checks
 
 | Rule | Finding |
@@ -107,18 +116,27 @@ working). Break-glass accounts are left alone. A human makes the change in the p
 | R8 | Registration campaign off, missing part of the SMS cohort, unlimited snoozes, or not targeting passkeys |
 | R9 | Privileged user excluded from the passkey policy (exclusion beats inclusion; break-glass check) |
 | R10 | Hygiene: FIDO2 disabled, profile sprawl, unused profiles, dangling targets, auto-added Authenticator AAGUIDs |
+| R11 | **Synced passkey at sign-in:** every Conditional Access policy covering an admin accepts a synced passkey (Microsoft's built-in phishing-resistant strength does) |
+| R12 | Weak admin sign-in gate: no enforced MFA policy, or every policy accepts SMS/voice |
+| R13 | Temporary Access Pass bootstrap: who can issue an admin a TAP and enrol their own passkey |
+| R14 | Tamperable policy group: a passkey, TAP or CA scoping group that is not role-assignable |
+| R15 | Authentication methods migration incomplete: legacy MFA/SSPR still governs SMS/voice |
+| R16 | Sign-in evidence: admins signing in with SMS, voice or a synced passkey |
 
 Every finding carries an evidence chain (role → group path → profile → setting → Microsoft rule) and
 an action. Full definitions: [docs/rules.md](docs/rules.md).
 
 ## Limits, stated plainly
 
-- Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, so R2 and R5
-  cover that scope. This keeps Graph calls bounded on large tenants.
+- Per-user FIDO2 detail is exported for privileged users, the SMS/voice cohort and, when an AAGUID allow list is
+  enforced, every passkey holder, so R2 and R5 cover that scope. This keeps Graph calls bounded on large tenants.
 - Synced vs device-bound for already-registered keys is classified from a list of known provider
   AAGUIDs; extend it with `--aaguid-map`.
 - The Graph passkey-profile schema is new. The loader is tolerant, and field mapping lives in one
   file (`effective_passkey/model.py`). Please open an issue with a redacted export if yours differs.
+- The collector reads sign-ins for privileged users only, so tenant-wide sign-in counts in R16 come from what you export.
+- Readable reports show every admin finding but cap ordinary users at 200 findings per rule and 2,000 table rows;
+  `actions.csv` and `result.json` are complete. 50,000 users analyze in about 4 seconds, 200,000 in about 20 (about 1 GB RAM).
 - Remediation is advice for a human. The tool never writes to a tenant.
 
 ## Website
@@ -130,9 +148,10 @@ variable `PAGES_ENABLED` to `true`.
 ## Development
 
 ```bash
-make test   # 42 unit tests, stdlib unittest
-make demo   # regenerate examples/reports (reports + remediation plans)
-make site   # build the GitHub Pages site into ./site
+make test       # 69 unit tests, stdlib unittest
+make demo       # regenerate examples/reports (reports + remediation plans)
+make collector  # run the PowerShell collector against a mocked Graph and compare (needs pwsh)
+make site       # build the GitHub Pages site into ./site
 ```
 
 MIT licensed. Use [Maester](https://maester.dev) for tenant baselines and EffectivePasskey for the

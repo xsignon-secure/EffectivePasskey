@@ -20,6 +20,7 @@ from .constants import (
     SMS_RETIREMENT_LATE,
     SMS_RETIREMENT_MAIN,
 )
+from .deep import DeepRules
 from .resolver import RANK_LABELS, EffectivePolicy, Resolver
 from .model import Tenant, User
 
@@ -34,6 +35,12 @@ RULES = {
     "R8": ("Campaign gap", "The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline."),
     "R9": ("Excluded but privileged", "A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all."),
     "R10": ("Policy hygiene", "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."),
+    "R11": ("Synced passkey at sign-in", "Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it."),
+    "R12": ("Weak admin sign-in gate", "An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice."),
+    "R13": ("TAP bootstrap path", "Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account."),
+    "R14": ("Tamperable policy group", "A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it."),
+    "R15": ("Migration incomplete", "Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete."),
+    "R16": ("Sign-in evidence", "Sign-in logs show admins using SMS, voice or synced passkeys."),
 }
 
 
@@ -162,6 +169,8 @@ class Auditor:
         self.r6()
         self.r8()
         self.r10()
+        self.deep = DeepRules(self)
+        self.deep.run()
         self.findings = sort_findings(self.findings)
         return self.findings
 
@@ -388,7 +397,7 @@ class Auditor:
     def r9(self, u: User, pol: EffectivePolicy):
         if not (u.is_privileged and pol.status == "excluded"):
             return
-        looks_breakglass = any(w in u.label.lower() for w in ("break", "glass", "emergency", "bg-"))
+        looks_breakglass = u.looks_breakglass
         self.add(
             rule="R9", severity="medium" if looks_breakglass else "high",
             title="Privileged user excluded from passkey policy",
