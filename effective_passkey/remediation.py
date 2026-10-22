@@ -81,7 +81,11 @@ class Planner:
         return sorted(self.tenant.users[u].label for u in uids if u in self.tenant.users)
 
     def _resolver(self) -> Resolver:
-        return Resolver(self.tenant)
+        # Membership only depends on groups, so reuse the index until a group is added or changed
+        key = tuple((g.id, len(g.members)) for g in self.tenant.groups.values())
+        if getattr(self, "_resolver_key", None) != key:
+            self._resolver_cache, self._resolver_key = Resolver(self.tenant), key
+        return self._resolver_cache
 
     def _covered_users(self, target: Target) -> set[str]:
         r = self._resolver()
@@ -168,7 +172,8 @@ class Planner:
             if not loose:
                 continue
             covered = self._covered_users(t)
-            admins = {u for u in covered & self.priv if self._resolver().resolve(self.tenant.users[u]).status != "excluded"}
+            r = self._resolver()
+            admins = {u for u in covered & self.priv if r.resolve(self.tenant.users[u]).status != "excluded"}
             if not admins:
                 continue
             old_name = self.tenant.group_name(t.id)

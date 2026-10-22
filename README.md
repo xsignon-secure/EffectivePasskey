@@ -128,12 +128,15 @@ an action. Full definitions: [docs/rules.md](docs/rules.md).
 
 ## Limits, stated plainly
 
-- Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, so R2 and R5
-  cover that scope. This keeps Graph calls bounded on large tenants.
+- Per-user FIDO2 detail is exported for privileged users, the SMS/voice cohort and, when an AAGUID allow list is
+  enforced, every passkey holder, so R2 and R5 cover that scope. This keeps Graph calls bounded on large tenants.
 - Synced vs device-bound for already-registered keys is classified from a list of known provider
   AAGUIDs; extend it with `--aaguid-map`.
 - The Graph passkey-profile schema is new. The loader is tolerant, and field mapping lives in one
   file (`effective_passkey/model.py`). Please open an issue with a redacted export if yours differs.
+- The collector reads sign-ins for privileged users only, so tenant-wide sign-in counts in R16 come from what you export.
+- Readable reports show every admin finding but cap ordinary users at 200 findings per rule and 2,000 table rows;
+  `actions.csv` and `result.json` are complete. 50,000 users analyze in about 4 seconds, 200,000 in about 20 (about 1 GB RAM).
 - Remediation is advice for a human. The tool never writes to a tenant.
 
 ## Website
@@ -145,9 +148,10 @@ variable `PAGES_ENABLED` to `true`.
 ## Development
 
 ```bash
-make test   # 67 unit tests, stdlib unittest
-make demo   # regenerate examples/reports (reports + remediation plans)
-make site   # build the GitHub Pages site into ./site
+make test       # 69 unit tests, stdlib unittest
+make demo       # regenerate examples/reports (reports + remediation plans)
+make collector  # run the PowerShell collector against a mocked Graph and compare (needs pwsh)
+make site       # build the GitHub Pages site into ./site
 ```
 
 MIT licensed. Use [Maester](https://maester.dev) for tenant baselines and EffectivePasskey for the

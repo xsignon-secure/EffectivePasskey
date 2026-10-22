@@ -262,7 +262,8 @@
       "[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example"
     ],
     "introduced": [
-      "[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example"
+      "[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example",
+      "[high] R5 Registered passkey not accepted by any scoped profile: erin@contoso.example"
     ],
     "beforeBySeverity": {
       "critical": 13,
@@ -272,7 +273,7 @@
     },
     "afterBySeverity": {
       "critical": 4,
-      "high": 5,
+      "high": 6,
       "medium": 2,
       "info": 1
     },

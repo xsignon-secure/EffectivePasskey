@@ -96,13 +96,15 @@ Evidence:
 
 ### [CRITICAL] R2 Privileged user holds a synced passkey: erin@contoso.example
 
-erin@contoso.example has a synced passkey registered (from the registration details report).
+erin@contoso.example holds 'Google Password Manager passkey' (synced, AAGUID ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4).
 
 Evidence:
 1. erin@contoso.example holds privileged role(s): Helpdesk Administrator via group 'Helpdesk'
-2. methodsRegistered includes 'passKeySynced'
+2. Registered FIDO2 method 'Google Password Manager passkey', model 'Google Password Manager', AAGUID ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4
+3. Classified as synced; attestation: not attested
+4. Created 2026-08-14T10:05:00Z
 
-**Action:** Have the user register a device-bound key, then delete the synced passkey from their methods.
+**Action:** Register a device-bound, attested key for this admin, then remove this passkey.
 
 ### [CRITICAL] R7 Privileged user has no phishing-resistant method: bob@contoso.example
 

@@ -8,8 +8,9 @@
     Nothing is changed in the tenant. The analyzer itself never sees a token:
     you export, you analyze, you delete.
 
-    Per-user FIDO2 detail is fetched only for privileged users and users whose
-    only MFA is SMS/voice, which keeps per-user Graph calls bounded.
+    Per-user FIDO2 detail is fetched only for privileged users, users whose
+    only MFA is SMS/voice and, when an AAGUID allow list is enforced, users who
+    hold a passkey. This keeps per-user Graph calls bounded.
 
     Also writes conditional_access.json (CA policies and authentication
     strengths) and, with -IncludeSignIns, signins.json for privileged users.
@@ -60,7 +61,7 @@ function Get-GraphAll([string] $Uri) {
         if ($page.value) { $items.AddRange([object[]] $page.value) }
         $Uri = $page.'@odata.nextLink'
     }
-    return $items
+    return ,$items  # comma keeps a one-item list a list instead of unrolling it
 }
 
 function Write-Json($Object, [string] $Name) {
@@ -95,10 +96,10 @@ Write-Json ([pscustomobject]@{ policies = $caPolicies; authenticationStrengths =
 # 2. Role assignments (active + PIM eligible) for privileged roles
 $assignments = [System.Collections.Generic.List[object]]::new()
 foreach ($tid in $PrivilegedRoleTemplates) {
-    foreach ($a in Get-GraphAll "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=roleDefinitionId eq '$tid'") {
+    foreach ($a in (Get-GraphAll "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?`$filter=roleDefinitionId eq '$tid'")) {
         $assignments.Add([pscustomobject]@{ principalId = $a.principalId; roleTemplateId = $tid; assignmentType = 'active' })
     }
-    foreach ($a in Get-GraphAll "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?`$filter=roleDefinitionId eq '$tid'") {
+    foreach ($a in (Get-GraphAll "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?`$filter=roleDefinitionId eq '$tid'")) {
         $assignments.Add([pscustomobject]@{ principalId = $a.principalId; roleTemplateId = $tid; assignmentType = 'eligible' })
     }
 }
@@ -150,14 +151,18 @@ function Expand-Principal([string] $Id, $Seen) {
 $deep = [System.Collections.Generic.HashSet[string]]::new()
 $assignments | ForEach-Object { Expand-Principal $_.principalId ([System.Collections.Generic.HashSet[string]]::new()) } |
     ForEach-Object { [void] $deep.Add($_) }
+# With an AAGUID allow list in force, any passkey holder can be locked out (R5), so read their keys too
+$allowLists = @($fido.passkeyProfiles | Where-Object { $_.keyRestrictions.isEnforced }).Count -gt 0 -or
+    [bool] $fido.keyRestrictions.isEnforced
 foreach ($u in $users) {
     $mfa = @($u.methodsRegistered | Where-Object { $_ -notin $NonMfaMethods })
     if ($mfa.Count -gt 0 -and -not ($mfa | Where-Object { $_ -notin $PhoneMethods })) { [void] $deep.Add($u.id) }
+    if ($allowLists -and ($u.methodsRegistered | Where-Object { $_ -like 'passKey*' -or $_ -eq 'fido2SecurityKey' })) { [void] $deep.Add($u.id) }
 }
 $fido2Methods = @{}
 foreach ($id in $deep) {
     try {
-        $fido2Methods[$id] = @(Get-GraphAll "https://graph.microsoft.com/v1.0/users/$id/authentication/fido2Methods")
+        $fido2Methods[$id] = Get-GraphAll "https://graph.microsoft.com/v1.0/users/$id/authentication/fido2Methods"
     } catch { Write-Warning "could not read FIDO2 methods for $id : $_" }
 }
 Write-Json ([pscustomobject]@{ roleAssignments = $assignments; fido2Methods = $fido2Methods }) 'roles.json'
@@ -172,7 +177,7 @@ if ($IncludeSignIns) {
     foreach ($id in $privileged) {
         $uri = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=userId eq '$id' and createdDateTime ge $since" +
                "&`$select=userId,userPrincipalName,createdDateTime,appDisplayName,status,authenticationDetails"
-        try { (Get-GraphAll $uri) | ForEach-Object { $signIns.Add($_) } }
+        try { foreach ($s in (Get-GraphAll $uri)) { $signIns.Add($s) } }
         catch { Write-Warning "could not read sign-ins for $id : $_" }
     }
     Write-Json ([pscustomobject]@{ value = $signIns }) 'signins.json'

@@ -33,6 +33,7 @@ details.f .body{padding:0 16px 14px}
 .subj{color:var(--muted);font-size:13px;word-break:break-all}
 ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
 .action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+p,li,dd,.callout{overflow-wrap:anywhere}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -61,11 +62,11 @@ footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid va
 <div class="meta">As of 2026-10-22 · Proposed changes for human review. EffectivePasskey never applies changes to a tenant.</div>
 <div class="tiles">
 <div class="tile"><b>6</b><span>proposed policy changes</span></div>
-<div class="tile"><b>5</b><span>findings resolved in simulation</span></div>
+<div class="tile"><b>6</b><span>findings resolved in simulation</span></div>
 <div class="tile"><b>1 → 0</b><span>admins who can register a synced passkey</span></div>
 <div class="tile"><b>7</b><span>user tasks</span></div>
 </div>
-<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 8 critical, 1 high, 2 medium, 1 low.
+<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 8 critical, 2 high, 2 medium, 1 low.
 After policy changes: 2 critical, 5 high. The proposed export is in <code>proposed-export/</code>; analyze it to verify.</div>
 
 <h2>Proposed changes</h2><details class='f' open><summary><span class='rule'>C1</span><strong>Convert legacy FIDO2 settings to an explicit Default passkey profile</strong><span class='subj'>fixes R6</span></summary><div class='body'><p>Makes the synced-passkey decision explicit instead of inherited from the old attestation toggle.</p><div class='meta'>After</div><pre>{

@@ -1,4 +1,4 @@
-.PHONY: test demo site
+.PHONY: test demo site collector
 AS_OF := 2026-10-22
 test:
 	python3 -m unittest discover -s tests -v
@@ -9,3 +9,5 @@ demo:
 	done
 site:
 	python3 scripts/build_site.py --out site
+collector:
+	python3 scripts/check_collector.py

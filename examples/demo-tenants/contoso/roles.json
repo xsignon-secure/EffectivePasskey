@@ -48,6 +48,15 @@
     ],
     "u-bg1": [],
     "u-dave": [],
-    "u-frank": []
+    "u-frank": [],
+    "u-erin": [
+      {
+        "id": "k5",
+        "displayName": "Google Password Manager passkey",
+        "aaGuid": "ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4",
+        "attestationLevel": "notAttested",
+        "createdDateTime": "2026-08-14T10:05:00Z"
+      }
+    ]
   }
 }

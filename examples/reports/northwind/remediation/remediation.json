@@ -193,6 +193,7 @@
   "outcome": {
     "resolved": [
       "[critical] R1 Privileged user can register a synced passkey: oscar@northwind.example",
+      "[high] R14 Policy group can be changed by non-privileged admins: Passkey Pilot",
       "[high] R4 Privileged SMS/voice user in an 'all passkey types' profile: oscar@northwind.example",
       "[low] R8 Campaign nudges a non-passkey method: tenant",
       "[medium] R6 Legacy FIDO2 settings imply synced passkeys: Default (legacy FIDO2 settings)",
@@ -210,7 +211,7 @@
     "introduced": [],
     "beforeBySeverity": {
       "critical": 8,
-      "high": 1,
+      "high": 2,
       "medium": 2,
       "low": 1
     },

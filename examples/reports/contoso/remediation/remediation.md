@@ -7,13 +7,14 @@ _Proposed changes for human review. EffectivePasskey never applies changes to a 
 Re-running the audit on the proposed configuration:
 
 - Findings before: 13 critical, 12 high, 4 medium, 1 info
-- Findings after policy changes: 4 critical, 5 high, 2 medium, 1 info
+- Findings after policy changes: 4 critical, 6 high, 2 medium, 1 info
 - Privileged users who can register a synced passkey: 4 → 0
 - 19 finding(s) resolved by policy changes; the rest need the user tasks below or a human decision.
 
 **Findings the proposal introduces (review before applying):**
 
 - [high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example
+- [high] R5 Registered passkey not accepted by any scoped profile: erin@contoso.example
 
 An R5 here usually means a weak key the user holds stops working once the loose profile no longer covers them. Complete that user's task (register a device-bound key) before applying the change.
 

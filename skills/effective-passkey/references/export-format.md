@@ -51,6 +51,8 @@ These unlock R11 to R16. Without them those rules stay silent and the report lis
   "fido2Methods": {"<userId>": [{"id", "displayName", "aaGuid", "attestationLevel", "createdDateTime"}]}
 }
 ```
-`principalId` may be a group; it is expanded. `fido2Methods` covers privileged users and the
-SMS/voice cohort. A key may carry `passkeyType` explicitly; otherwise it is classified from a list
+`principalId` may be a group; it is expanded. `fido2Methods` covers privileged users, the
+SMS/voice cohort and, when an AAGUID allow list is enforced, every passkey holder. Any array may be
+written as a bare object when it has one item (PowerShell's `ConvertTo-Json` does this); it is read as
+a one-item list. A key may carry `passkeyType` explicitly; otherwise it is classified from a list
 of known AAGUIDs (extend with `--aaguid-map map.json`, `{"<aaguid>": ["Name", "synced"]}`).

@@ -241,7 +241,9 @@ class DeepRules:
         target_roles = {r["templateId"] for r in target.roles}
         need_paa = bool(target_roles - AUTH_ADMIN_MANAGEABLE)
         allowed = {GLOBAL_ADMIN_TEMPLATE_ID, PRIV_AUTH_ADMIN} | (set() if need_paa else {AUTH_ADMIN})
-        return sorted((u for u in self.t.users.values()
+        if not hasattr(self, "_role_holders"):
+            self._role_holders = [u for u in self.t.users.values() if u.roles]
+        return sorted((u for u in self._role_holders
                        if u.id != target.id and {r["templateId"] for r in u.roles} & allowed),
                       key=lambda u: u.label)
 

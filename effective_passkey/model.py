@@ -277,14 +277,24 @@ def _read_json(path: str):
         raise InputError(f"{path} is not valid JSON: {exc}") from None
 
 
+def _seq(x) -> list:
+    """A JSON array as a list. PowerShell's ConvertTo-Json writes a one-item array as
+    a bare object (or string), so a lone dict or scalar is read as a one-item list."""
+    if x is None:
+        return []
+    if isinstance(x, list):
+        return x
+    return [x]
+
+
 def _unwrap(data, *keys):
     """Return a list from a Graph-style response or one of the named keys."""
     if isinstance(data, list):
         return data
     if isinstance(data, dict):
         for k in keys + ("value",):
-            if k in data and isinstance(data[k], list):
-                return data[k]
+            if k in data and isinstance(data[k], (list, dict)):
+                return _seq(data[k])
     return []
 
 
@@ -308,8 +318,8 @@ def _types(raw) -> set[str]:
 
 def _targets(raw) -> list[Target]:
     out = []
-    for t in raw or []:
-        pids = t.get("passkeyProfileIds") or t.get("passkeyProfiles") or []
+    for t in _seq(raw):
+        pids = _seq(t.get("passkeyProfileIds") or t.get("passkeyProfiles"))
         if isinstance(pids, str):
             pids = [pids]
         out.append(
@@ -334,7 +344,7 @@ def _key_restrictions(raw: dict):
     return (
         bool(kr.get("isEnforced", False)),
         str(kr.get("enforcementType", "allow")).lower(),
-        {a.lower() for a in kr.get("aaGuids", []) or []},
+        {a.lower() for a in _seq(kr.get("aaGuids", []))},
     )
 
 
@@ -394,7 +404,7 @@ def parse_fido2(policy: dict) -> Fido2Policy:
         }
     else:
         profiles = {}
-        for rp in raw_profiles:
+        for rp in _seq(raw_profiles):
             p = _profile(rp)
             profiles[p.id] = p
 
@@ -412,7 +422,7 @@ def parse_campaign(policy: dict) -> Campaign:
     raw = reg.get("authenticationMethodsRegistrationCampaign")
     if not raw:
         return Campaign()
-    inc = raw.get("includeTargets") or []
+    inc = _seq(raw.get("includeTargets"))
     return Campaign(
         state=str(raw.get("state", "disabled")),
         snooze_days=raw.get("snoozeDurationInDays"),
@@ -448,26 +458,26 @@ def parse_tap(policy: dict) -> TapPolicy:
 
 
 def _list(d: dict, key: str) -> list[str]:
-    return [str(x) for x in (d.get(key) or [])]
+    return [str(x) for x in _seq(d.get(key))]
 
 
 def parse_conditional_access(data) -> tuple[list[CaPolicy], dict[str, AuthStrength]]:
     strengths: dict[str, AuthStrength] = {}
     for sid, (name, combos) in BUILTIN_STRENGTHS.items():
         strengths[sid] = AuthStrength(id=sid, name=name, combinations=set(combos), builtin=True)
-    raw_strengths = data.get("authenticationStrengths") or data.get("authenticationStrengthPolicies") or [] \
+    raw_strengths = _seq(data.get("authenticationStrengths") or data.get("authenticationStrengthPolicies")) \
         if isinstance(data, dict) else []
     for st in raw_strengths:
         aaguids = None
-        for cc in st.get("combinationConfigurations") or []:
-            if "fido2" in str(cc.get("@odata.type", "")).lower() or "fido2" in (cc.get("appliesToCombinations") or []):
+        for cc in _seq(st.get("combinationConfigurations")):
+            if "fido2" in str(cc.get("@odata.type", "")).lower() or "fido2" in _seq(cc.get("appliesToCombinations")):
                 listed = cc.get("allowedAAGUIDs")
                 if listed is not None:
                     aaguids = {str(a).lower() for a in listed}
         sid = str(st.get("id"))
         strengths[sid] = AuthStrength(
             id=sid, name=str(st.get("displayName") or sid),
-            combinations={str(c) for c in st.get("allowedCombinations") or []},
+            combinations={str(c) for c in _seq(st.get("allowedCombinations"))},
             fido2_aaguids=aaguids, builtin=str(st.get("policyType", "")).lower() == "builtin",
         )
 
@@ -475,7 +485,7 @@ def parse_conditional_access(data) -> tuple[list[CaPolicy], dict[str, AuthStreng
     for p in _unwrap(data, "policies", "conditionalAccessPolicies"):
         cond = p.get("conditions") or {}
         users = cond.get("users") or {}
-        apps = (cond.get("applications") or {}).get("includeApplications") or []
+        apps = _seq((cond.get("applications") or {}).get("includeApplications"))
         grant = p.get("grantControls") or {}
         strength = grant.get("authenticationStrength") or {}
         sid = strength.get("id") if isinstance(strength, dict) else strength
@@ -489,7 +499,7 @@ def parse_conditional_access(data) -> tuple[list[CaPolicy], dict[str, AuthStreng
             include_groups=_list(users, "includeGroups"), exclude_groups=_list(users, "excludeGroups"),
             include_roles=[r.lower() for r in _list(users, "includeRoles")],
             exclude_roles=[r.lower() for r in _list(users, "excludeRoles")],
-            apps=[str(a) for a in apps], builtin_controls=[str(c) for c in grant.get("builtInControls") or []],
+            apps=[str(a) for a in apps], builtin_controls=[str(c) for c in _seq(grant.get("builtInControls"))],
             strength_id=str(sid) if sid else None,
             operator=str(grant.get("operator") or "OR").upper(),
         ))
@@ -499,7 +509,7 @@ def parse_conditional_access(data) -> tuple[list[CaPolicy], dict[str, AuthStreng
 def parse_signins(data) -> list[SignIn]:
     out = []
     for s in _unwrap(data, "signIns"):
-        details = s.get("authenticationDetails") or []
+        details = _seq(s.get("authenticationDetails"))
         methods = [str(d.get("authenticationMethod", "")) for d in details if d.get("succeeded", True)]
         status = s.get("status") or {}
         out.append(SignIn(
@@ -514,10 +524,10 @@ def parse_groups(data) -> dict[str, Group]:
     groups = {}
     for g in _unwrap(data, "groups"):
         members = []
-        for m in g.get("members", []) or []:
+        for m in _seq(g.get("members", [])):
             members.append(str(m["id"]) if isinstance(m, dict) else str(m))
         gid = str(g["id"])
-        owners = [str(o["id"]) if isinstance(o, dict) else str(o) for o in g.get("owners", []) or []]
+        owners = [str(o["id"]) if isinstance(o, dict) else str(o) for o in _seq(g.get("owners", []))]
         ra = g.get("isAssignableToRole")
         groups[gid] = Group(id=gid, name=str(g.get("displayName", gid)), members=members,
                             role_assignable=None if ra is None else bool(ra), owners=owners,
@@ -548,7 +558,7 @@ def parse_users(data) -> dict[str, User]:
             display_name=str(u.get("userDisplayName") or u.get("displayName") or ""),
             user_type=str(u.get("userType", "member")),
             category=_category(u),
-            methods={str(m) for m in u.get("methodsRegistered", []) or []},
+            methods={str(m) for m in _seq(u.get("methodsRegistered", []))},
         )
     return users
 
@@ -615,7 +625,7 @@ def apply_roles(data, users: dict[str, User], groups: dict[str, Group], aaguid_m
         fido = {str(e.get("userId")): e.get("methods", []) for e in fido}
     for uid, methods in fido.items():
         if uid in users:
-            users[uid].keys = [_key(m, aaguid_map) for m in methods or []]
+            users[uid].keys = [_key(m, aaguid_map) for m in _seq(methods)]
             users[uid].keys_known = True
 
 

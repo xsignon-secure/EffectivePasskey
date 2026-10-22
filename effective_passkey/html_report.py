@@ -5,8 +5,11 @@ from __future__ import annotations
 import base64
 import os
 import re
+from collections import Counter
 from dataclasses import dataclass
 from html import escape
+
+from .report import REPORT_USER_FINDINGS_PER_RULE, REPORT_USER_ROWS
 
 LOGO_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".gif": "image/gif"}
 MAX_LOGO_BYTES = 512 * 1024
@@ -85,6 +88,7 @@ details.f .body{padding:0 16px 14px}
 .subj{color:var(--muted);font-size:13px;word-break:break-all}
 ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
 .action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+p,li,dd,.callout{overflow-wrap:anywhere}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -163,8 +167,17 @@ def render(result: dict, brand: Brand | None = None) -> str:
         f'<div class="tile{" alert" if alert else ""}"><b>{e(v)}</b><span>{e(label)}</span></div>' for v, label, alert in tiles
     )
 
+    # Large tenants: every admin, group and tenant finding is shown, but per-user findings for ordinary
+    # users are capped per rule so the page stays usable. The full list is in actions.csv and result.json.
     finding_html = []
+    shown: Counter = Counter()
+    hidden: Counter = Counter()
     for f in result["findings"]:
+        if f["userId"] and f["userId"] not in priv_ids:
+            if shown[f["rule"]] >= REPORT_USER_FINDINGS_PER_RULE:
+                hidden[f["rule"]] += 1
+                continue
+            shown[f["rule"]] += 1
         ev = "".join(f"<li>{e(x)}</li>" for x in f["evidence"])
         finding_html.append(
             f'<details class="f" data-sev="{e(f["severity"])}" data-rule="{e(f["rule"])}" data-priv="{int(f["userId"] in priv_ids)}">'
@@ -174,6 +187,9 @@ def render(result: dict, brand: Brand | None = None) -> str:
             f'<div class="body"><p>{e(f["detail"])}</p><div class="meta">Evidence chain</div><ol class="ev">{ev}</ol>'
             f'<div class="action"><strong>Action:</strong> {e(f["action"])}</div></div></details>'
         )
+    for rule, n in sorted(hidden.items(), key=lambda kv: int(kv[0][1:])):
+        finding_html.append(f'<p class="callout more">{n} more {e(rule)} finding(s) for non-privileged users are not '
+                            f'shown here. They are all in actions.csv and result.json.</p>')
     if not finding_html:
         finding_html.append('<p class="callout">No findings. Every user\'s effective policy matches its intent tier.</p>')
 
@@ -185,8 +201,11 @@ def render(result: dict, brand: Brand | None = None) -> str:
         f"<td>{e(', '.join(u['permittedBy']) or '-')}</td>"
         f"<td>{e(u['smsCohort'] or '-')}</td>"
         f"<td>{e(', '.join(u['findings']) or '-')}</td></tr>"
-        for u in result["users"]
+        for u in result["users"][:REPORT_USER_ROWS]
     )
+    if len(result["users"]) > REPORT_USER_ROWS:
+        user_rows += (f"<tr><td colspan='7' class='meta'>Showing the {REPORT_USER_ROWS} highest-risk of {len(result['users'])} "
+                      f"users. Every user is in result.json.</td></tr>")
     profile_rows = "".join(
         f"<tr><td>{e(p['name'])}{' <span class=meta>(legacy)</span>' if p['legacy'] else ''}</td>"
         f"<td>{e(', '.join(p['passkeyTypes']))}</td><td>{'required' if p['attestationEnforced'] else 'off'}</td>"

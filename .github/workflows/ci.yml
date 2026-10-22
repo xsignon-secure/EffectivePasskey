@@ -29,3 +29,13 @@ jobs:
         run: |
           pip install .
           effective-passkey --version
+  collector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Collector against mocked Graph matches the fixtures
+        shell: pwsh
+        run: python scripts/check_collector.py --pwsh pwsh

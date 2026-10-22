@@ -147,12 +147,14 @@
       "subjectType": "user",
       "userId": "u-erin",
       "cohort": "",
-      "detail": "erin@contoso.example has a synced passkey registered (from the registration details report).",
+      "detail": "erin@contoso.example holds 'Google Password Manager passkey' (synced, AAGUID ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4).",
       "evidence": [
         "erin@contoso.example holds privileged role(s): Helpdesk Administrator via group 'Helpdesk'",
-        "methodsRegistered includes 'passKeySynced'"
+        "Registered FIDO2 method 'Google Password Manager passkey', model 'Google Password Manager', AAGUID ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4",
+        "Classified as synced; attestation: not attested",
+        "Created 2026-08-14T10:05:00Z"
       ],
-      "action": "Have the user register a device-bound key, then delete the synced passkey from their methods."
+      "action": "Register a device-bound, attested key for this admin, then remove this passkey."
     },
     {
       "key": "R7|user|bob@contoso.example|Privileged user has no phishing-resistant method",
@@ -718,7 +720,14 @@
       ],
       "phoneOnly": false,
       "smsCohort": "",
-      "keys": [],
+      "keys": [
+        {
+          "name": "Google Password Manager passkey",
+          "aaguid": "ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4",
+          "type": "synced",
+          "attested": false
+        }
+      ],
       "findings": [
         "R1",
         "R2",

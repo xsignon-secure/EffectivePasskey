@@ -5,7 +5,7 @@ As of 2026-10-22 · grade **F** · EffectivePasskey 0.3.0
 - **102 days** to 1 Feb 2027 (SMS/voice retirement); 252 days to 1 Jul 2027 (Global Admins, external users)
 - 8 users analyzed, 2 privileged, **1 privileged users can register a synced passkey**
 - SMS/voice-only: 3 in the 1 Feb cohort, 2 in the 1 Jul cohort
-- Findings: 8 critical, 1 high, 2 medium, 1 low, 0 info
+- Findings: 8 critical, 2 high, 2 medium, 1 low, 0 info
 
 Overlapping passkey profiles resolve by *at least one profile allows it*, not most-restrictive-wins. Each user's effective policy below is the union of every profile they are scoped to.
 
@@ -127,6 +127,17 @@ Evidence:
 4. Profile 'Default (legacy FIDO2 settings)': deviceBound + synced; no attestation; no AAGUID restriction
 
 **Action:** Move this admin into an admin-only device-bound profile and out of the all-types profile's target.
+
+### [HIGH] R14 Policy group can be changed by non-privileged admins: Passkey Pilot
+
+'Passkey Pilot' targets a passkey profile that allows synced passkeys but is not role-assignable. Adding an admin to it lets them register a synced passkey (R1).
+
+Evidence:
+1. Group 'Passkey Pilot' targets a passkey profile that allows synced passkeys
+2. isAssignableToRole = false, so Groups Administrators, User Administrators and the group's owners can change its membership
+3. Adding an admin to it lets them register a synced passkey (R1).
+
+**Action:** Use a role-assignable group (isAssignableToRole = true, no owners) for this target, so only Privileged Role Administrators can change it.
 
 ### [MEDIUM] R6 Legacy FIDO2 settings imply synced passkeys: Default (legacy FIDO2 settings)
 

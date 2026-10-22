@@ -35,6 +35,10 @@ def build_result(auditor: Auditor) -> dict:
     t = auditor.tenant
     findings = [f.to_dict() for f in auditor.findings]
     sev = Counter(f["severity"] for f in findings)
+    rules_by_user: dict[str, set] = {}
+    for f in findings:
+        if f["userId"]:
+            rules_by_user.setdefault(f["userId"], set()).add(f["rule"])
 
     users = []
     for pol in sorted(auditor.policies.values(), key=lambda p: (-p.rank, not p.user.is_privileged, p.user.label)):
@@ -57,12 +61,13 @@ def build_result(auditor: Auditor) -> dict:
             "smsCohort": cohort,
             "keys": [{"name": k.display_name or k.model, "aaguid": k.aaguid, "type": k.passkey_type,
                       "attested": k.attested} for k in u.keys],
-            "findings": sorted({f["rule"] for f in findings if f["userId"] == u.id}, key=lambda r: int(r[1:])),
+            "findings": sorted(rules_by_user.get(u.id, ()), key=lambda r: int(r[1:])),
         })
 
+    scoped_count = Counter(pid for pol in auditor.policies.values() for pid in {sp.profile.id for sp in pol.profiles})
     profiles = []
     for p in t.fido2.profiles.values():
-        scoped = sum(1 for pol in auditor.policies.values() if any(sp.profile.id == p.id for sp in pol.profiles))
+        scoped = scoped_count[p.id]
         profiles.append({
             "id": p.id, "name": p.name,
             "passkeyTypes": sorted(p.passkey_types),
@@ -192,6 +197,11 @@ def _path_row(p: dict, labels: list[str]) -> str:
     return f"| {p['user']} | {p['verdict']} | " + " | ".join(cells) + " |"
 
 
+# Per-user detail for ordinary users is capped in the readable reports; CSV and JSON stay complete.
+REPORT_USER_FINDINGS_PER_RULE = 200
+REPORT_USER_ROWS = 2000
+
+
 def to_markdown(result: dict) -> str:
     s = result["summary"]
     d = result["deadlines"]
@@ -224,7 +234,15 @@ def to_markdown(result: dict) -> str:
     ]
     if not result["findings"]:
         out.append("No findings.")
+    priv_ids = {u["id"] for u in result["users"] if u["privileged"]}
+    shown: Counter = Counter()
+    hidden: Counter = Counter()
     for f in result["findings"]:
+        if f["userId"] and f["userId"] not in priv_ids:
+            if shown[f["rule"]] >= REPORT_USER_FINDINGS_PER_RULE:
+                hidden[f["rule"]] += 1
+                continue
+            shown[f["rule"]] += 1
         out.append(f"### [{f['severity'].upper()}] {f['rule']} {f['title']}: {f['subject']}")
         out.append("")
         out.append(f["detail"])
@@ -235,12 +253,16 @@ def to_markdown(result: dict) -> str:
         out.append("")
         out.append(f"**Action:** {f['action']}")
         out.append("")
+    for rule, n in sorted(hidden.items(), key=lambda kv: int(kv[0][1:])):
+        out += [f"_{n} more {rule} finding(s) for non-privileged users are not shown. They are all in actions.csv and result.json._", ""]
     out += ["## Effective policy per user", "",
             "| User | Privileged | Status / weakest credential | Permitted by | SMS cohort | Rules |",
             "|---|---|---|---|---|---|"]
-    for u in result["users"]:
+    for u in result["users"][:REPORT_USER_ROWS]:
         out.append(f"| {u['upn'] or u['displayName']} | {u['roles'] or 'no'} | {u['weakestCredential']} | "
                    f"{', '.join(u['permittedBy']) or '-'} | {u['smsCohort'] or '-'} | {', '.join(u['findings']) or '-'} |")
+    if len(result["users"]) > REPORT_USER_ROWS:
+        out.append(f"\n_Showing the {REPORT_USER_ROWS} highest-risk of {len(result['users'])} users. Every user is in result.json._")
     out += ["", "## Passkey profiles", "",
             "| Profile | Types | Attestation | AAGUID restriction | Weakest credential | Users scoped |",
             "|---|---|---|---|---|---|"]

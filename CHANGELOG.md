@@ -12,7 +12,17 @@
 - Admin attack paths in HTML and Markdown reports, plus an "Inputs analyzed" coverage strip.
 - Remediation proposes a custom device-bound authentication strength and CA policy, TAP lockdown, role-assignable
   replacement groups and migration completion, and writes them into the proposed export.
-- Collector exports Conditional Access, TAP, group ownership and (optionally) sign-ins.
+- Collector exports Conditional Access, TAP, group ownership and (optionally) sign-ins. When an AAGUID allow list is
+  enforced it also reads the keys of every passkey holder, so R5 lockouts are found for ordinary users too.
+- Collector fix: one-item Graph results were unrolled by PowerShell and written as bare objects, dropping a tenant's only
+  CA policy or authentication strength. The loader now also reads a bare object as a one-item list.
+- `scripts/check_collector.py` runs the real collector against a mocked Graph (paging, nested groups, single-item
+  results) for each demo tenant and checks the analysis matches the fixture. Runs in CI.
+- Scale: group membership is indexed once per group, and report building no longer scans every finding per user.
+  50,000 users: analyze 62 s to 4 s, remediate 222 s to 19 s. 200,000 users analyze in about 21 s.
+- HTML and Markdown reports cap ordinary users' per-user findings at 200 per rule and the user table at 2,000 rows
+  (admins are never capped); CSV and JSON stay complete. A 50,000-user report drops from 23 MB to 3.4 MB.
+- `--as-of` with an invalid date is an input error (exit 2), not a traceback.
 
 ## 0.2.0
 

@@ -21,7 +21,7 @@
     "legacyPolicy": true,
     "findingsBySeverity": {
       "critical": 8,
-      "high": 1,
+      "high": 2,
       "medium": 2,
       "low": 1,
       "info": 0
@@ -201,6 +201,24 @@
         "Profile 'Default (legacy FIDO2 settings)': deviceBound + synced; no attestation; no AAGUID restriction"
       ],
       "action": "Move this admin into an admin-only device-bound profile and out of the all-types profile's target."
+    },
+    {
+      "key": "R14|group|Passkey Pilot|group",
+      "rule": "R14",
+      "ruleName": "Tamperable policy group",
+      "severity": "high",
+      "title": "Policy group can be changed by non-privileged admins",
+      "subject": "Passkey Pilot",
+      "subjectType": "group",
+      "userId": "",
+      "cohort": "",
+      "detail": "'Passkey Pilot' targets a passkey profile that allows synced passkeys but is not role-assignable. Adding an admin to it lets them register a synced passkey (R1).",
+      "evidence": [
+        "Group 'Passkey Pilot' targets a passkey profile that allows synced passkeys",
+        "isAssignableToRole = false, so Groups Administrators, User Administrators and the group's owners can change its membership",
+        "Adding an admin to it lets them register a synced passkey (R1)."
+      ],
+      "action": "Use a role-assignable group (isAssignableToRole = true, no owners) for this target, so only Privileged Role Administrators can change it."
     },
     {
       "key": "R6|profile|Default (legacy FIDO2 settings)|Legacy FIDO2 settings imply synced passkeys",
@@ -577,7 +595,7 @@
     "signIns": false,
     "temporaryAccessPass": false,
     "migrationState": false,
-    "groupOwnership": false
+    "groupOwnership": true
   },
   "notes": [
     "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."
