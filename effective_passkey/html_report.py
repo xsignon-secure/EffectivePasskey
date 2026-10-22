@@ -94,6 +94,18 @@ tr:last-child td{border-bottom:0}
 dl.rules{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}dl.rules dt{font-weight:600}dl.rules dd{margin:0;color:var(--muted)}
 .brandbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--accent);color:var(--muted);font-size:14px}
 .brandlogo{max-height:40px;max-width:180px}
+.paths{display:grid;gap:10px}
+.path{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.path header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.verdict{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:2px 6px;color:#fff}
+.verdict.exposed{background:var(--crit)}.verdict.partial{background:var(--med)}.verdict.protected{background:var(--ok)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.step{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:6px;padding:4px 8px;font-size:12px;max-width:260px}
+.step b{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.step.bad{border-left-color:var(--crit)}.step.warn{border-left-color:var(--med)}.step.ok{border-left-color:var(--ok)}
+.arrow{align-self:center;color:var(--muted)}
+.cov{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}.cov span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted)}
+.cov span.on{color:var(--ok);border-color:var(--ok)}
 footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
 """
 
@@ -109,6 +121,27 @@ d.style.display=show?'':'none'})})});
 
 def e(x) -> str:
     return escape(str(x), quote=True)
+
+
+def _paths_html(result: dict) -> str:
+    paths = result.get("attackPaths") or []
+    cov = result.get("coverage") or {}
+    names = {"conditionalAccess": "Conditional Access", "signIns": "Sign-in logs", "temporaryAccessPass": "TAP policy",
+             "migrationState": "Migration state", "groupOwnership": "Group ownership"}
+    cov_html = "".join(f'<span class="{"on" if v else ""}">{"✓" if v else "–"} {e(names.get(k, k))}</span>' for k, v in cov.items())
+    if not paths:
+        return ""
+    rows = []
+    for p in paths:
+        chain = '<span class="arrow">→</span>'.join(
+            f'<div class="step {e(st["risk"])}"><b>{e(st["label"])}</b>{e(st["value"])}</div>' for st in p["steps"])
+        rows.append(f'<div class="path"><header><span class="verdict {e(p["verdict"])}">{e(p["verdict"])}</span>'
+                    f'<strong>{e(p["user"])}</strong><span class="subj">{e(", ".join(p["rules"]))}</span></header>'
+                    f'<div class="chain">{chain}</div></div>')
+    return (f'<h2>Admin attack paths</h2><p class="meta">For each privileged user: what they can register, what they hold, '
+            f'what Conditional Access lets them sign in with, and who could bootstrap a new credential. '
+            f'Registration resolves by union; Conditional Access by intersection.</p>'
+            f'<div class="cov">Inputs analyzed: {cov_html}</div><div class="paths" style="margin-top:12px">{"".join(rows)}</div>')
 
 
 def render(result: dict, brand: Brand | None = None) -> str:
@@ -175,8 +208,11 @@ def render(result: dict, brand: Brand | None = None) -> str:
 <div class="callout"><strong>How to read this.</strong> When a user is scoped to more than one passkey profile, Entra allows a passkey
 if it satisfies <em>at least one</em> of them. Profiles do not stack toward strict, they union toward permissive. Exclusion from the
 passkey policy is the one thing that beats inclusion. Each user's effective policy below is that union.
+Conditional Access works the other way: every applicable policy must be satisfied, so the admin attack paths show both what
+an admin can register and what they can sign in with.
 SMS and voice retire on 1 Feb 2027 with a blocking passkey prompt and no opt-out; Global Admins and external users follow on 1 Jul 2027.</div>
 
+{_paths_html(result)}
 <h2>Findings</h2>
 <div class="filters" role="group" aria-label="Filter findings">
 <button data-f="all" aria-pressed="true">All ({len(result['findings'])})</button>

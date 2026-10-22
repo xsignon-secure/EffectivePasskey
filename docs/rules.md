@@ -12,6 +12,12 @@
 | R8 | Campaign gap | The registration campaign is off, misses part of the SMS cohort, allows unlimited snoozes, or nudges a non-passkey method. | medium / low |
 | R9 | Excluded but privileged | A privileged user is excluded from the FIDO2 policy. Medium if it looks like a break-glass account. | high / medium |
 | R10 | Policy hygiene | FIDO2 disabled, many profiles, large AAGUID lists, unused profiles, dangling targets, auto-added Authenticator AAGUIDs. | high / low / info |
+| R11 | Synced passkey at sign-in | Every enforced CA policy covering an admin (all apps or admin portals) accepts a synced passkey. Critical if they can also register or already hold one; medium if only registration blocks it. When CA blocks synced passkeys, R1 drops from critical to high and says why. | critical / medium |
+| R12 | Weak admin sign-in gate | No enforced CA policy requires MFA or a strength for the admin, or every one accepts SMS/voice. Critical for Global Admins, medium for accounts named like break-glass. | critical / high / medium |
+| R13 | TAP bootstrap path | TAP is enabled for the admin. Lists who can issue it (Global Admin and Privileged Authentication Admin; Authentication Admin for Helpdesk/Password admins). High if multi-use or longer than 60 minutes. | high / medium |
+| R14 | Tamperable policy group | A group used as a loose-profile target, FIDO2 exclusion, TAP target or CA exclusion for admins has isAssignableToRole = false. Shows owners and dynamic rules. | critical / high / medium |
+| R15 | Migration incomplete | policyMigrationState is not migrationComplete. | high / medium |
+| R16 | Sign-in evidence | Successful admin sign-ins with a synced passkey (critical) or SMS/voice (high); a count of non-admins still on SMS (info). | critical / high / info |
 
 ## Effective credential ladder (higher is weaker)
 
@@ -23,6 +29,17 @@
 5. Synced passkey, any provider, unattested
 
 A user's effective rank is the **maximum** over their scoped profiles.
+
+## Grant semantics used for R11 and R12
+
+- Only enforced policies count; report-only policies are listed in the evidence.
+- A policy counts for an admin when it targets all apps or Microsoft Admin Portals and requires MFA, an
+  authentication strength, or block.
+- Every applicable policy must be satisfied, so a credential is accepted only if every policy accepts it.
+- Within a policy, an OR grant is satisfied by any one control. A device control (compliant or joined device) offered
+  as an OR alternative lets any credential through. AND grants need all controls.
+- A strength accepts synced passkeys when it allows `fido2` with no AAGUID allow list, or with an allow list that
+  includes a known synced-provider AAGUID.
 
 ## Grade
 

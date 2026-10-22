@@ -25,6 +25,28 @@ INPUT_FILES = {
     "users": "users.json",
     "roles": "roles.json",
 }
+# Optional exports that unlock the sign-in and attack-path rules (R11-R16).
+OPTIONAL_FILES = {
+    "conditional_access": "conditional_access.json",
+    "signins": "signins.json",
+}
+
+# Built-in authentication strengths (Microsoft Learn), used when a CA policy
+# references one that the export does not list.
+BUILTIN_STRENGTHS = {
+    "00000000-0000-0000-0000-000000000002": ("Multifactor authentication", [
+        "windowsHelloForBusiness", "fido2", "x509CertificateMultiFactor", "deviceBasedPush",
+        "temporaryAccessPassOneTime", "temporaryAccessPassMultiUse", "password,microsoftAuthenticatorPush",
+        "password,softwareOath", "password,hardwareOath", "password,sms", "password,voice",
+        "federatedMultiFactor", "microsoftAuthenticatorPush,federatedSingleFactor",
+        "softwareOath,federatedSingleFactor", "hardwareOath,federatedSingleFactor",
+        "sms,federatedSingleFactor", "voice,federatedSingleFactor"]),
+    "00000000-0000-0000-0000-000000000003": ("Passwordless MFA", [
+        "windowsHelloForBusiness", "fido2", "x509CertificateMultiFactor", "deviceBasedPush"]),
+    "00000000-0000-0000-0000-000000000004": ("Phishing-resistant MFA", [
+        "windowsHelloForBusiness", "fido2", "x509CertificateMultiFactor"]),
+}
+PHISHING_RESISTANT_COMBOS = {"windowsHelloForBusiness", "fido2", "x509CertificateMultiFactor"}
 
 
 class InputError(Exception):
@@ -133,12 +155,89 @@ class User:
     def label(self) -> str:
         return self.upn or self.display_name or self.id
 
+    @property
+    def looks_breakglass(self) -> bool:
+        """Naming heuristic for emergency-access accounts."""
+        text = f"{self.upn} {self.display_name}".lower()
+        return any(w in text for w in ("breakglass", "break-glass", "break glass", "emergency", "bg-"))
+
 
 @dataclass
 class Group:
     id: str
     name: str
     members: list[str]
+    role_assignable: bool | None = None  # None = not in export
+    owners: list[str] = field(default_factory=list)
+    membership_rule: str = ""
+
+
+@dataclass
+class TapPolicy:
+    state: str = "disabled"
+    include_targets: list[Target] = field(default_factory=list)
+    exclude_targets: list[Target] = field(default_factory=list)
+    usable_once: bool | None = None
+    default_lifetime: int | None = None
+    max_lifetime: int | None = None
+    present: bool = False
+
+    @property
+    def enabled(self) -> bool:
+        return self.state.lower() == "enabled"
+
+
+@dataclass
+class AuthStrength:
+    id: str
+    name: str
+    combinations: set[str]
+    fido2_aaguids: set[str] | None = None  # None = any FIDO2/passkey authenticator
+    builtin: bool = False
+
+    def accepts_passkey(self, aaguid: str | None) -> bool:
+        if "fido2" not in self.combinations:
+            return False
+        return self.fido2_aaguids is None or (aaguid or "").lower() in self.fido2_aaguids
+
+    @property
+    def phishing_resistant_only(self) -> bool:
+        return bool(self.combinations) and self.combinations <= PHISHING_RESISTANT_COMBOS
+
+
+@dataclass
+class CaPolicy:
+    id: str
+    name: str
+    state: str
+    include_users: list[str]
+    exclude_users: list[str]
+    include_groups: list[str]
+    exclude_groups: list[str]
+    include_roles: list[str]
+    exclude_roles: list[str]
+    apps: list[str]
+    builtin_controls: list[str]
+    strength_id: str | None
+    operator: str = "OR"
+
+    @property
+    def enforced(self) -> bool:
+        return self.state.lower() == "enabled"
+
+    @property
+    def admin_relevant_apps(self) -> bool:
+        return any(a.lower() in ("all", "microsoftadminportals") for a in self.apps)
+
+
+@dataclass
+class SignIn:
+    user_id: str
+    upn: str
+    when: str
+    methods: list[str]
+    succeeded: bool
+    app: str = ""
 
 
 @dataclass
@@ -151,6 +250,12 @@ class Tenant:
     users: dict[str, User]
     source_dir: str = ""
     raw_policy: dict = field(default_factory=dict)
+    tap: TapPolicy = field(default_factory=TapPolicy)
+    migration_state: str | None = None
+    ca_policies: list[CaPolicy] | None = None  # None = conditional_access.json not provided
+    strengths: dict[str, AuthStrength] = field(default_factory=dict)
+    signins: list[SignIn] | None = None  # None = signins.json not provided
+    raw_ca: dict = field(default_factory=dict)
 
     def group_name(self, gid: str) -> str:
         if gid == ALL_USERS_TARGET:
@@ -327,6 +432,84 @@ def parse_phone_enabled(policy: dict) -> bool:
     return False
 
 
+def parse_tap(policy: dict) -> TapPolicy:
+    for cfg in _method_configs(policy):
+        if "temporaryaccesspass" in _config_type(cfg):
+            return TapPolicy(
+                state=str(cfg.get("state", "disabled")),
+                include_targets=_targets(cfg.get("includeTargets")),
+                exclude_targets=_targets(cfg.get("excludeTargets")),
+                usable_once=cfg.get("isUsableOnce"),
+                default_lifetime=cfg.get("defaultLifetimeInMinutes"),
+                max_lifetime=cfg.get("maximumLifetimeInMinutes") or cfg.get("maxLifetimeInMinutes"),
+                present=True,
+            )
+    return TapPolicy()
+
+
+def _list(d: dict, key: str) -> list[str]:
+    return [str(x) for x in (d.get(key) or [])]
+
+
+def parse_conditional_access(data) -> tuple[list[CaPolicy], dict[str, AuthStrength]]:
+    strengths: dict[str, AuthStrength] = {}
+    for sid, (name, combos) in BUILTIN_STRENGTHS.items():
+        strengths[sid] = AuthStrength(id=sid, name=name, combinations=set(combos), builtin=True)
+    raw_strengths = data.get("authenticationStrengths") or data.get("authenticationStrengthPolicies") or [] \
+        if isinstance(data, dict) else []
+    for st in raw_strengths:
+        aaguids = None
+        for cc in st.get("combinationConfigurations") or []:
+            if "fido2" in str(cc.get("@odata.type", "")).lower() or "fido2" in (cc.get("appliesToCombinations") or []):
+                listed = cc.get("allowedAAGUIDs")
+                if listed is not None:
+                    aaguids = {str(a).lower() for a in listed}
+        sid = str(st.get("id"))
+        strengths[sid] = AuthStrength(
+            id=sid, name=str(st.get("displayName") or sid),
+            combinations={str(c) for c in st.get("allowedCombinations") or []},
+            fido2_aaguids=aaguids, builtin=str(st.get("policyType", "")).lower() == "builtin",
+        )
+
+    policies = []
+    for p in _unwrap(data, "policies", "conditionalAccessPolicies"):
+        cond = p.get("conditions") or {}
+        users = cond.get("users") or {}
+        apps = (cond.get("applications") or {}).get("includeApplications") or []
+        grant = p.get("grantControls") or {}
+        strength = grant.get("authenticationStrength") or {}
+        sid = strength.get("id") if isinstance(strength, dict) else strength
+        if isinstance(strength, dict) and sid and sid not in strengths and strength.get("allowedCombinations"):
+            strengths[str(sid)] = AuthStrength(id=str(sid), name=str(strength.get("displayName") or sid),
+                                               combinations={str(c) for c in strength["allowedCombinations"]})
+        policies.append(CaPolicy(
+            id=str(p.get("id", "")), name=str(p.get("displayName", p.get("id", ""))),
+            state=str(p.get("state", "disabled")),
+            include_users=_list(users, "includeUsers"), exclude_users=_list(users, "excludeUsers"),
+            include_groups=_list(users, "includeGroups"), exclude_groups=_list(users, "excludeGroups"),
+            include_roles=[r.lower() for r in _list(users, "includeRoles")],
+            exclude_roles=[r.lower() for r in _list(users, "excludeRoles")],
+            apps=[str(a) for a in apps], builtin_controls=[str(c) for c in grant.get("builtInControls") or []],
+            strength_id=str(sid) if sid else None,
+            operator=str(grant.get("operator") or "OR").upper(),
+        ))
+    return policies, strengths
+
+
+def parse_signins(data) -> list[SignIn]:
+    out = []
+    for s in _unwrap(data, "signIns"):
+        details = s.get("authenticationDetails") or []
+        methods = [str(d.get("authenticationMethod", "")) for d in details if d.get("succeeded", True)]
+        status = s.get("status") or {}
+        out.append(SignIn(
+            user_id=str(s.get("userId", "")), upn=str(s.get("userPrincipalName", "")),
+            when=str(s.get("createdDateTime", "")), methods=[m for m in methods if m],
+            succeeded=str(status.get("errorCode", 0)) == "0", app=str(s.get("appDisplayName", "")),
+        ))
+    return out
+
+
 def parse_groups(data) -> dict[str, Group]:
     groups = {}
     for g in _unwrap(data, "groups"):
@@ -334,7 +517,11 @@ def parse_groups(data) -> dict[str, Group]:
         for m in g.get("members", []) or []:
             members.append(str(m["id"]) if isinstance(m, dict) else str(m))
         gid = str(g["id"])
-        groups[gid] = Group(id=gid, name=str(g.get("displayName", gid)), members=members)
+        owners = [str(o["id"]) if isinstance(o, dict) else str(o) for o in g.get("owners", []) or []]
+        ra = g.get("isAssignableToRole")
+        groups[gid] = Group(id=gid, name=str(g.get("displayName", gid)), members=members,
+                            role_assignable=None if ra is None else bool(ra), owners=owners,
+                            membership_rule=str(g.get("membershipRule") or ""))
     return groups
 
 
@@ -455,6 +642,15 @@ def load_tenant(directory: str, name: str | None = None, aaguid_map_path: str | 
     roles_data = _read_json(paths["roles"])
     apply_roles(roles_data, users, groups, load_aaguid_map(aaguid_map_path))
 
+    ca_policies, strengths, signins, raw_ca = None, {}, None, {}
+    ca_path = os.path.join(directory, OPTIONAL_FILES["conditional_access"])
+    if os.path.isfile(ca_path):
+        raw_ca = _read_json(ca_path)
+        ca_policies, strengths = parse_conditional_access(raw_ca)
+    si_path = os.path.join(directory, OPTIONAL_FILES["signins"])
+    if os.path.isfile(si_path):
+        signins = parse_signins(_read_json(si_path))
+
     tenant_name = name
     if not tenant_name and isinstance(policy, dict):
         tenant_name = policy.get("tenantDisplayName")
@@ -467,4 +663,10 @@ def load_tenant(directory: str, name: str | None = None, aaguid_map_path: str | 
         users=users,
         source_dir=directory,
         raw_policy=policy if isinstance(policy, dict) else {"value": policy},
+        tap=parse_tap(policy),
+        migration_state=(policy.get("policyMigrationState") if isinstance(policy, dict) else None),
+        ca_policies=ca_policies,
+        strengths=strengths,
+        signins=signins,
+        raw_ca=raw_ca if isinstance(raw_ca, dict) else {"policies": raw_ca},
     )

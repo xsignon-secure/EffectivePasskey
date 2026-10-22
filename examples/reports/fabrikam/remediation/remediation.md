@@ -6,10 +6,10 @@ _Proposed changes for human review. EffectivePasskey never applies changes to a 
 
 Re-running the audit on the proposed configuration:
 
-- Findings before: 1 critical, 3 high, 3 medium, 2 low, 1 info
+- Findings before: 5 high, 5 medium, 2 low, 1 info
 - Findings after policy changes: 1 high, 2 low, 1 info
 - Privileged users who can register a synced passkey: 1 → 0
-- 6 finding(s) resolved by policy changes; the rest need the user tasks below or a human decision.
+- 9 finding(s) resolved by policy changes; the rest need the user tasks below or a human decision.
 
 ## Proposed changes
 
@@ -159,6 +159,30 @@ After:
 }
 ```
 > Check the targetedAuthenticationMethod value your tenant's Graph version accepts.
+
+### C7 · Exclude admins from Temporary Access Pass and make TAP single-use, 60 minutes
+
+Anyone who can issue an admin a TAP can register a passkey on that account. (fixes R13)
+
+Before:
+```json
+{
+  "isUsableOnce": true,
+  "maximumLifetimeInMinutes": 60,
+  "excluded": []
+}
+```
+After:
+```json
+{
+  "isUsableOnce": true,
+  "maximumLifetimeInMinutes": 60,
+  "excluded": [
+    "Privileged users (TAP excluded)"
+  ]
+}
+```
+> Issue admin TAPs only through a documented, two-person process, by temporarily removing the admin from this group.
 
 ## User tasks
 

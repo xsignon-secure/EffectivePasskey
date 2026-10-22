@@ -83,6 +83,22 @@
       "@odata.type": "#microsoft.graph.smsAuthenticationMethodConfiguration",
       "id": "Sms",
       "state": "enabled"
+    },
+    {
+      "@odata.type": "#microsoft.graph.temporaryAccessPassAuthenticationMethodConfiguration",
+      "id": "TemporaryAccessPass",
+      "state": "enabled",
+      "isUsableOnce": true,
+      "defaultLifetimeInMinutes": 60,
+      "maximumLifetimeInMinutes": 60,
+      "includeTargets": [
+        {
+          "id": "g-admins",
+          "targetType": "group"
+        }
+      ],
+      "excludeTargets": []
     }
-  ]
+  ],
+  "policyMigrationState": "migrationComplete"
 }

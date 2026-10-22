@@ -96,8 +96,69 @@ def build_result(auditor: Auditor) -> dict:
         "users": users,
         "profiles": profiles,
         "rules": {k: {"name": v[0], "definition": v[1]} for k, v in RULES.items()},
+        "attackPaths": attack_paths(auditor),
+        "coverage": coverage(auditor),
         "notes": [SCALING_NOTE],
     }
+
+
+def coverage(auditor: Auditor) -> dict:
+    """Which optional inputs were present, so readers know what the silence of R11-R16 means."""
+    t = auditor.tenant
+    return {
+        "conditionalAccess": t.ca_policies is not None,
+        "signIns": t.signins is not None,
+        "temporaryAccessPass": t.tap.present,
+        "migrationState": t.migration_state is not None,
+        "groupOwnership": any(g.role_assignable is not None for g in t.groups.values()),
+    }
+
+
+def attack_paths(auditor: Auditor) -> list[dict]:
+    """Per admin: the chain from role to what they can register, hold, sign in with, and who can bootstrap them."""
+    out = []
+    deep = auditor.deep
+    t = auditor.tenant
+    by_user: dict[str, list] = {}
+    for f in auditor.findings:
+        if f.user_id:
+            by_user.setdefault(f.user_id, []).append(f)
+    for pol in sorted(auditor.policies.values(), key=lambda p: p.user.label):
+        u = pol.user
+        if not u.is_privileged:
+            continue
+        steps = [{"label": "Role", "value": role_names(u), "risk": "info"}]
+        if pol.status == "allowed":
+            via = sorted({auditor.resolver.describe_path(m) for sp in pol.profiles for m in sp.via})
+            steps.append({"label": "Passkey scope", "value": ", ".join(sp.profile.name for sp in pol.profiles)
+                          + (f" ({'; '.join(via)})" if via else ""), "risk": "info"})
+        steps.append({"label": "Can register", "value": pol.weakest_label,
+                      "risk": "bad" if pol.rank >= 4 else "warn" if pol.rank == 3 or pol.status != "allowed" else "ok"})
+        weak = [k for k in u.keys if k.passkey_type == "synced" or k.attested is False]
+        if u.keys_known or u.methods:
+            held = ("synced/unattested key held" if weak or "passKeySynced" in u.methods
+                    else "device-bound key held" if u.keys or u.methods & {"passKeyDeviceBound", "fido2SecurityKey"}
+                    else "no passkey")
+            steps.append({"label": "Holds", "value": held,
+                          "risk": "bad" if "synced" in held else "ok" if "device" in held else "warn"})
+        g = deep.gate(u)
+        steps.append({"label": "Sign-in gate", "value": g.label,
+                      "risk": "info" if not g.evaluated else "bad" if (g.accepts_phone or g.accepts_synced or not g.applicable) else "ok"})
+        if t.tap.present:
+            tap = [f for f in by_user.get(u.id, []) if f.rule == "R13"]
+            n = len(deep._issuers(u)) if tap else 0
+            steps.append({"label": "TAP bootstrap", "value": f"{n} other user(s) can issue a TAP" if tap else "not TAP-eligible",
+                          "risk": "bad" if tap else "ok"})
+        if t.signins is not None:
+            used = sorted({m for s in t.signins if s.user_id == u.id and s.succeeded for m in s.methods})
+            steps.append({"label": "Signed in with", "value": ", ".join(used) or "no sign-ins in export",
+                          "risk": "info" if not used else "bad" if any(("synced" in m.lower() or "text" in m.lower() or "phone" in m.lower()) for m in used) else "ok"})
+        risks = [s["risk"] for s in steps]
+        out.append({"user": u.label, "userId": u.id, "steps": steps,
+                    "verdict": "exposed" if "bad" in risks else "partial" if "warn" in risks else "protected",
+                    "rules": sorted({f.rule for f in by_user.get(u.id, [])}, key=lambda r: int(r[1:]))})
+    order = {"exposed": 0, "partial": 1, "protected": 2}
+    return sorted(out, key=lambda p: (order[p["verdict"]], p["user"]))
 
 
 def grade(sev: Counter) -> str:
@@ -125,6 +186,12 @@ def to_csv(result: dict) -> str:
     return buf.getvalue()
 
 
+def _path_row(p: dict, labels: list[str]) -> str:
+    vals = {st["label"]: st["value"] for st in p["steps"]}
+    cells = [vals.get(label, "-").replace("|", "/") for label in labels]
+    return f"| {p['user']} | {p['verdict']} | " + " | ".join(cells) + " |"
+
+
 def to_markdown(result: dict) -> str:
     s = result["summary"]
     d = result["deadlines"]
@@ -142,6 +209,15 @@ def to_markdown(result: dict) -> str:
         "",
         "Overlapping passkey profiles resolve by *at least one profile allows it*, not most-restrictive-wins. "
         "Each user's effective policy below is the union of every profile they are scoped to.",
+        "",
+        "## Admin attack paths",
+        "",
+        "| Admin | Verdict | " + " | ".join(dict.fromkeys(st["label"] for p in result["attackPaths"] for st in p["steps"][1:])) + " |"
+        if result["attackPaths"] else "No privileged users found.",
+        "|---|---|" + "---|" * len(dict.fromkeys(st["label"] for p in result["attackPaths"] for st in p["steps"][1:]))
+        if result["attackPaths"] else "",
+        *(_path_row(p, list(dict.fromkeys(st["label"] for q in result["attackPaths"] for st in q["steps"][1:])))
+          for p in result["attackPaths"]),
         "",
         "## Findings",
         "",

@@ -1,17 +1,24 @@
 # EffectivePasskey report: Fabrikam (synthetic demo)
 
-As of 2026-10-22 · grade **D** · EffectivePasskey 0.2.0
+As of 2026-10-22 · grade **C** · EffectivePasskey 0.3.0
 
 - **102 days** to 1 Feb 2027 (SMS/voice retirement); 252 days to 1 Jul 2027 (Global Admins, external users)
 - 6 users analyzed, 2 privileged, **1 privileged users can register a synced passkey**
 - SMS/voice-only: 1 in the 1 Feb cohort, 0 in the 1 Jul cohort
-- Findings: 1 critical, 3 high, 3 medium, 2 low, 1 info
+- Findings: 0 critical, 5 high, 5 medium, 2 low, 1 info
 
 Overlapping passkey profiles resolve by *at least one profile allows it*, not most-restrictive-wins. Each user's effective policy below is the union of every profile they are scoped to.
 
+## Admin attack paths
+
+| Admin | Verdict | Passkey scope | Can register | Holds | Sign-in gate | TAP bootstrap |
+|---|---|---|---|---|---|---|
+| gina@fabrikam.example | exposed | Contractors, Admins - security keys (attested) (member of 'Vendors EU' → 'Contractors' (nested); member of group 'IT Admins') | Synced passkey, any provider, unattested | device-bound key held | Device-bound, approved keys only | 1 other user(s) can issue a TAP |
+| jack@fabrikam.example | exposed | Admins - security keys (attested) (member of group 'IT Admins') | Device-bound, attested, allow-listed authenticators only | device-bound key held | Device-bound, approved keys only | 0 other user(s) can issue a TAP |
+
 ## Findings
 
-### [CRITICAL] R1 Privileged user can register a synced passkey: gina@fabrikam.example
+### [HIGH] R1 Privileged user can register a synced passkey: gina@fabrikam.example
 
 gina@fabrikam.example (Exchange Administrator) can register: Synced passkey, any provider, unattested. Their stricter admin profile is overridden.
 
@@ -24,6 +31,7 @@ Evidence:
 6. Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.
 7. Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Contractors')
 8. The stricter profile(s) 'Admins - security keys (attested)' never get a say for this credential.
+9. Sign-in gate: 'IT Admins: approved security keys only' rejects synced passkeys, so a registered synced passkey cannot be used to sign in to covered apps. Registration is still weaker than intended.
 
 **Action:** Exclude privileged users from the target(s) 'Contractors' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile.
 
@@ -59,6 +67,18 @@ Evidence:
 
 **Action:** Add AAGUID a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa to an allow list that covers this user, or have them register a permitted key before the change lands.
 
+### [HIGH] R14 Policy group can be changed by non-privileged admins: Contractors
+
+'Contractors' targets a passkey profile that allows synced passkeys but is not role-assignable. Adding an admin to it lets them register a synced passkey (R1).
+
+Evidence:
+1. Group 'Contractors' targets a passkey profile that allows synced passkeys
+2. isAssignableToRole = false, so Groups Administrators, User Administrators and the group's owners can change its membership
+3. Dynamic membership rule: user.companyName -eq "Vendor" (whoever can edit those user attributes controls membership)
+4. Adding an admin to it lets them register a synced passkey (R1).
+
+**Action:** Use a role-assignable group (isAssignableToRole = true, no owners) for this target, so only Privileged Role Administrators can change it.
+
 ### [MEDIUM] R6 Attested profile lists synced passkeys: Admins - security keys (attested)
 
 'Admins - security keys (attested)' requires attestation and also lists synced passkeys. Synced passkeys cannot be attested, so that setting is dead weight and suggests a misunderstanding.
@@ -87,6 +107,30 @@ Evidence:
 1. Campaign state: disabled
 
 **Action:** Enable the registration campaign for the SMS/voice cohort, targeting passkeys, with limited snoozes.
+
+### [MEDIUM] R13 Temporary Access Pass can bootstrap a new passkey on an admin: gina@fabrikam.example
+
+1 other user(s) can issue gina@fabrikam.example a TAP and register a passkey with it.
+
+Evidence:
+1. TAP is enabled and gina@fabrikam.example is in its target
+2. isUsableOnce = True; maximum lifetime = 60 min
+3. 1 other user(s) can issue a TAP to them: jack@fabrikam.example
+4. A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key.
+
+**Action:** Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less.
+
+### [MEDIUM] R13 Temporary Access Pass can bootstrap a new passkey on an admin: jack@fabrikam.example
+
+0 other user(s) can issue jack@fabrikam.example a TAP and register a passkey with it.
+
+Evidence:
+1. TAP is enabled and jack@fabrikam.example is in its target
+2. isUsableOnce = True; maximum lifetime = 60 min
+3. 0 other user(s) can issue a TAP to them: none listed
+4. A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key.
+
+**Action:** Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less.
 
 ### [LOW] R10 Profile not targeted by any group: Pilot (unused)
 
@@ -118,9 +162,9 @@ Evidence:
 
 | User | Privileged | Status / weakest credential | Permitted by | SMS cohort | Rules |
 |---|---|---|---|---|---|
-| gina@fabrikam.example | Exchange Administrator | Synced passkey, any provider, unattested | Contractors | - | R1 |
+| gina@fabrikam.example | Exchange Administrator | Synced passkey, any provider, unattested | Contractors | - | R1, R13 |
 | kim@vendor.example | no | Synced passkey, any provider, unattested | Contractors | - | - |
-| jack@fabrikam.example | Global Administrator | Device-bound, attested, allow-listed authenticators only | Admins - security keys (attested) | - | R5 |
+| jack@fabrikam.example | Global Administrator | Device-bound, attested, allow-listed authenticators only | Admins - security keys (attested) | - | R5, R13 |
 | hank@fabrikam.example | no | Device-bound, attested, allow-listed authenticators only | Workforce - Authenticator only | - | R5 |
 | ivy@fabrikam.example | no | Device-bound, attested, allow-listed authenticators only | Workforce - Authenticator only | - | - |
 | liam@fabrikam.example | no | Device-bound, attested, allow-listed authenticators only | Workforce - Authenticator only | 1 Feb 2027 | R3 |
@@ -146,9 +190,15 @@ Evidence:
 - **R8 Campaign gap**: The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline.
 - **R9 Excluded but privileged**: A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all.
 - **R10 Policy hygiene**: Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs.
+- **R11 Synced passkey at sign-in**: Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it.
+- **R12 Weak admin sign-in gate**: An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice.
+- **R13 TAP bootstrap path**: Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account.
+- **R14 Tamperable policy group**: A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it.
+- **R15 Migration incomplete**: Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete.
+- **R16 Sign-in evidence**: Sign-in logs show admins using SMS, voice or synced passkeys.
 
 ---
 
 _Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope._
 
-_Generated offline by EffectivePasskey 0.2.0. No tenant credentials were used by the analyzer._
+_Generated offline by EffectivePasskey 0.3.0. No tenant credentials were used by the analyzer._

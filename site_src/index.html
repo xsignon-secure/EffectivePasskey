@@ -82,6 +82,12 @@ passkey. The portal shows both profiles side by side and never computes this per
     <a href="demo/northwind/report.html">Report</a> · <a href="demo/northwind/remediation/remediation.html">Remediation plan</a></div>
 </div>
 
+<h2>Registration is a union. Sign-in is an intersection.</h2>
+<p>Passkey profiles let a passkey in if any profile allows it. Conditional Access lets a credential through only if every
+applicable policy accepts it. EffectivePasskey evaluates both and draws an attack path per admin: what they can register,
+what they hold, what they can sign in with, who could bootstrap a new credential with a Temporary Access Pass, and what the
+sign-in logs show.</p>
+
 <h2>Run it on your tenant</h2>
 <pre><code># 1. Export (PowerShell 7, read-only delegated scopes; you run it, the analyzer never sees a token)
 ./collector/Export-EffectivePasskeyData.ps1 -OutputPath ./my-export
@@ -106,6 +112,12 @@ tools that read SKILL.md.</p>
 <tr><th>R8</th><td>Registration campaign gaps</td></tr>
 <tr><th>R9</th><td>Privileged user excluded from the passkey policy</td></tr>
 <tr><th>R10</th><td>Policy hygiene</td></tr>
+<tr><th>R11</th><td>Synced passkey accepted at admin sign-in (the built-in phishing-resistant strength allows it)</td></tr>
+<tr><th>R12</th><td>Admin sign-in gate accepts SMS/voice, or no enforced MFA policy at all</td></tr>
+<tr><th>R13</th><td>Temporary Access Pass lets someone else enrol a passkey on an admin</td></tr>
+<tr><th>R14</th><td>Policy scoping group is not role-assignable, so non-privileged admins can change it</td></tr>
+<tr><th>R15</th><td>Authentication methods migration incomplete</td></tr>
+<tr><th>R16</th><td>Sign-in logs show admins using SMS, voice or synced passkeys</td></tr>
 </table></div>
 
 <h2>For MSPs and consultants</h2>

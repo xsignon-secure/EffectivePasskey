@@ -1,0 +1,79 @@
+{
+  "value": [
+    {
+      "userId": "u-bob",
+      "userPrincipalName": "bob@contoso.example",
+      "createdDateTime": "2026-10-20T08:12:00Z",
+      "appDisplayName": "Azure Portal",
+      "status": {
+        "errorCode": 0
+      },
+      "authenticationDetails": [
+        {
+          "authenticationMethod": "Text message",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "userId": "u-carol",
+      "userPrincipalName": "carol@contoso.example",
+      "createdDateTime": "2026-10-21T09:40:00Z",
+      "appDisplayName": "Microsoft Entra admin center",
+      "status": {
+        "errorCode": 0
+      },
+      "authenticationDetails": [
+        {
+          "authenticationMethod": "Passkey (synced)",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "userId": "u-dave",
+      "userPrincipalName": "dave@contoso.example",
+      "createdDateTime": "2026-10-21T10:00:00Z",
+      "appDisplayName": "Outlook",
+      "status": {
+        "errorCode": 0
+      },
+      "authenticationDetails": [
+        {
+          "authenticationMethod": "Text message",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "userId": "u-alice",
+      "userPrincipalName": "alice@contoso.example",
+      "createdDateTime": "2026-10-21T11:00:00Z",
+      "appDisplayName": "Azure Portal",
+      "status": {
+        "errorCode": 0
+      },
+      "authenticationDetails": [
+        {
+          "authenticationMethod": "FIDO2 security key",
+          "succeeded": true
+        }
+      ]
+    },
+    {
+      "userId": "u-bob",
+      "userPrincipalName": "bob@contoso.example",
+      "createdDateTime": "2026-10-21T12:00:00Z",
+      "appDisplayName": "Azure Portal",
+      "status": {
+        "errorCode": 50074
+      },
+      "authenticationDetails": [
+        {
+          "authenticationMethod": "Text message",
+          "succeeded": false
+        }
+      ]
+    }
+  ]
+}

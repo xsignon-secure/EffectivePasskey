@@ -7,20 +7,42 @@
         "u-alice",
         "u-bob",
         "g-tier0"
-      ]
+      ],
+      "isAssignableToRole": true
     },
     {
       "id": "g-tier0",
       "displayName": "Tier 0 Role Holders (role-assignable)",
       "members": [
         "u-carol"
-      ]
+      ],
+      "isAssignableToRole": true
     },
     {
       "id": "g-breakglass",
       "displayName": "Break-glass accounts",
       "members": [
         "u-bg1"
+      ],
+      "isAssignableToRole": true
+    },
+    {
+      "id": "g-ca-exclusions",
+      "displayName": "CA exclusions (legacy apps)",
+      "isAssignableToRole": false,
+      "owners": [
+        "u-dave"
+      ],
+      "members": [
+        "u-bg1"
+      ]
+    },
+    {
+      "id": "g-helpdesk",
+      "displayName": "Helpdesk",
+      "isAssignableToRole": true,
+      "members": [
+        "u-erin"
       ]
     }
   ]

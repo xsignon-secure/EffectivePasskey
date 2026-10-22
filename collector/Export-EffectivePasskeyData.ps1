@@ -11,6 +11,9 @@
     Per-user FIDO2 detail is fetched only for privileged users and users whose
     only MFA is SMS/voice, which keeps per-user Graph calls bounded.
 
+    Also writes conditional_access.json (CA policies and authentication
+    strengths) and, with -IncludeSignIns, signins.json for privileged users.
+
     Requires PowerShell 7+ and the Microsoft.Graph.Authentication module:
         Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
@@ -21,7 +24,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $OutputPath,
-    [string] $TenantId
+    [string] $TenantId,
+    # Also export recent sign-ins of privileged users (R16). Needs AuditLog.Read.All and Entra ID P1.
+    [switch] $IncludeSignIns,
+    [int] $SignInDays = 7
 )
 
 $ErrorActionPreference = 'Stop'
@@ -75,6 +81,17 @@ $org = Invoke-MgGraphRequest -Method GET -OutputType PSObject -Uri 'https://grap
 $policy | Add-Member -NotePropertyName tenantDisplayName -NotePropertyValue $org.value[0].displayName -Force
 Write-Json $policy 'policy.json'
 
+# 1b. Conditional Access policies and authentication strengths (R11, R12, R14)
+$caPolicies = Get-GraphAll 'https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies'
+$strengths = Get-GraphAll 'https://graph.microsoft.com/v1.0/identity/conditionalAccess/authenticationStrength/policies'
+foreach ($st in $strengths) {
+    if ($st.policyType -eq 'custom') {
+        $cc = Get-GraphAll "https://graph.microsoft.com/v1.0/identity/conditionalAccess/authenticationStrength/policies/$($st.id)/combinationConfigurations"
+        $st | Add-Member -NotePropertyName combinationConfigurations -NotePropertyValue $cc -Force
+    }
+}
+Write-Json ([pscustomobject]@{ policies = $caPolicies; authenticationStrengths = $strengths }) 'conditional_access.json'
+
 # 2. Role assignments (active + PIM eligible) for privileged roles
 $assignments = [System.Collections.Generic.List[object]]::new()
 foreach ($tid in $PrivilegedRoleTemplates) {
@@ -88,11 +105,17 @@ foreach ($tid in $PrivilegedRoleTemplates) {
 
 # 3. Groups: every group the passkey policy or campaign targets, plus role-assignable groups, with nesting
 $fido = $policy.authenticationMethodConfigurations | Where-Object { $_.id -eq 'Fido2' }
+$tap = $policy.authenticationMethodConfigurations | Where-Object { $_.id -eq 'TemporaryAccessPass' }
 $campaign = $policy.registrationEnforcement.authenticationMethodsRegistrationCampaign
 $queue = [System.Collections.Generic.Queue[string]]::new()
-@($fido.includeTargets) + @($fido.excludeTargets) + @($campaign.includeTargets) + @($campaign.excludeTargets) |
+@($fido.includeTargets) + @($fido.excludeTargets) + @($tap.includeTargets) + @($tap.excludeTargets) +
+    @($campaign.includeTargets) + @($campaign.excludeTargets) |
     Where-Object { $_ -and $_.id -ne 'all_users' -and $_.targetType -eq 'group' } |
     ForEach-Object { $queue.Enqueue($_.id) }
+foreach ($ca in $caPolicies) {
+    @($ca.conditions.users.includeGroups) + @($ca.conditions.users.excludeGroups) |
+        Where-Object { $_ } | ForEach-Object { $queue.Enqueue($_) }
+}
 $assignments | ForEach-Object { $queue.Enqueue($_.principalId) }
 
 $groups = @{}
@@ -100,10 +123,15 @@ while ($queue.Count -gt 0) {
     $id = $queue.Dequeue()
     if ($groups.ContainsKey($id)) { continue }
     try {
-        $g = Invoke-MgGraphRequest -Method GET -OutputType PSObject -Uri "https://graph.microsoft.com/v1.0/groups/$id`?`$select=id,displayName"
+        $g = Invoke-MgGraphRequest -Method GET -OutputType PSObject -Uri "https://graph.microsoft.com/v1.0/groups/$id`?`$select=id,displayName,isAssignableToRole,membershipRule"
     } catch { continue }  # principal is a user, not a group
     $members = Get-GraphAll "https://graph.microsoft.com/v1.0/groups/$id/members?`$select=id"
-    $groups[$id] = [pscustomobject]@{ id = $g.id; displayName = $g.displayName; members = @($members | ForEach-Object { $_.id }) }
+    $owners = Get-GraphAll "https://graph.microsoft.com/v1.0/groups/$id/owners?`$select=id"
+    $groups[$id] = [pscustomobject]@{
+        id = $g.id; displayName = $g.displayName
+        isAssignableToRole = [bool] $g.isAssignableToRole; membershipRule = $g.membershipRule
+        owners = @($owners | ForEach-Object { $_.id }); members = @($members | ForEach-Object { $_.id })
+    }
     $members | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.group' } | ForEach-Object { $queue.Enqueue($_.id) }
 }
 Write-Json ([pscustomobject]@{ value = @($groups.Values) }) 'groups.json'
@@ -133,6 +161,22 @@ foreach ($id in $deep) {
     } catch { Write-Warning "could not read FIDO2 methods for $id : $_" }
 }
 Write-Json ([pscustomobject]@{ roleAssignments = $assignments; fido2Methods = $fido2Methods }) 'roles.json'
+
+# 6. Optional: recent sign-ins of privileged users (R16)
+if ($IncludeSignIns) {
+    $since = (Get-Date).ToUniversalTime().AddDays(-$SignInDays).ToString('yyyy-MM-ddTHH:mm:ssZ')
+    $privileged = [System.Collections.Generic.HashSet[string]]::new()
+    $assignments | ForEach-Object { Expand-Principal $_.principalId ([System.Collections.Generic.HashSet[string]]::new()) } |
+        ForEach-Object { [void] $privileged.Add($_) }
+    $signIns = [System.Collections.Generic.List[object]]::new()
+    foreach ($id in $privileged) {
+        $uri = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=userId eq '$id' and createdDateTime ge $since" +
+               "&`$select=userId,userPrincipalName,createdDateTime,appDisplayName,status,authenticationDetails"
+        try { (Get-GraphAll $uri) | ForEach-Object { $signIns.Add($_) } }
+        catch { Write-Warning "could not read sign-ins for $id : $_" }
+    }
+    Write-Json ([pscustomobject]@{ value = $signIns }) 'signins.json'
+}
 
 Disconnect-MgGraph | Out-Null
 Write-Host "Done. Export holds user names and method metadata: keep it local and delete it after analysis."

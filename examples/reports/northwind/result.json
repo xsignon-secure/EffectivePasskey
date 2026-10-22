@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "tenant": "Northwind (synthetic demo)",
   "asOf": "2026-10-22",
@@ -476,7 +476,108 @@
     "R10": {
       "name": "Policy hygiene",
       "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    },
+    "R11": {
+      "name": "Synced passkey at sign-in",
+      "definition": "Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it."
+    },
+    "R12": {
+      "name": "Weak admin sign-in gate",
+      "definition": "An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice."
+    },
+    "R13": {
+      "name": "TAP bootstrap path",
+      "definition": "Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account."
+    },
+    "R14": {
+      "name": "Tamperable policy group",
+      "definition": "A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it."
+    },
+    "R15": {
+      "name": "Migration incomplete",
+      "definition": "Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete."
+    },
+    "R16": {
+      "name": "Sign-in evidence",
+      "definition": "Sign-in logs show admins using SMS, voice or synced passkeys."
     }
+  },
+  "attackPaths": [
+    {
+      "user": "oscar@northwind.example",
+      "userId": "u-oscar",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "User Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Default (legacy FIDO2 settings) (member of group 'Passkey Pilot')",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "no passkey",
+          "risk": "warn"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Not evaluated (no Conditional Access export)",
+          "risk": "info"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R4",
+        "R7"
+      ]
+    },
+    {
+      "user": "nora@northwind.example",
+      "userId": "u-nora",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Global Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Not targeted by passkey policy",
+          "risk": "warn"
+        },
+        {
+          "label": "Holds",
+          "value": "no passkey",
+          "risk": "warn"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Not evaluated (no Conditional Access export)",
+          "risk": "info"
+        }
+      ],
+      "verdict": "partial",
+      "rules": [
+        "R3",
+        "R7"
+      ]
+    }
+  ],
+  "coverage": {
+    "conditionalAccess": false,
+    "signIns": false,
+    "temporaryAccessPass": false,
+    "migrationState": false,
+    "groupOwnership": false
   },
   "notes": [
     "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."

@@ -18,13 +18,14 @@
         "privilegedUsersCovered": [
           "alice@contoso.example",
           "bob@contoso.example",
-          "carol@contoso.example"
+          "carol@contoso.example",
+          "erin@contoso.example"
         ]
       },
       "after": {
         "target": "All users (excluding privileged users)",
         "targetId": "ep-proposed-all-users-excluding-privileged-users",
-        "members": 3
+        "members": 2
       },
       "notes": [
         "The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it."
@@ -32,6 +33,26 @@
     },
     {
       "id": "C2",
+      "kind": "policy",
+      "title": "Scope privileged users to 'Admins - device-bound'",
+      "rationale": "Every admin should be scoped to the strict profile, and only to it.",
+      "fixes": [
+        "R1"
+      ],
+      "before": null,
+      "after": {
+        "target": "Privileged users (passkey admin profile)",
+        "profile": "Admins - device-bound",
+        "users": [
+          "erin@contoso.example"
+        ]
+      },
+      "notes": [
+        "Prefer targeting your existing role-assignable admin group instead of this snapshot group."
+      ]
+    },
+    {
+      "id": "C3",
       "kind": "campaign",
       "title": "Point the registration campaign at passkeys for all users, with limited snoozes",
       "rationale": "3 SMS/voice-only user(s) need a nudge before their deadline.",
@@ -59,11 +80,123 @@
       "notes": [
         "Check the targetedAuthenticationMethod value your tenant's Graph version accepts."
       ]
+    },
+    {
+      "id": "C4",
+      "kind": "conditional_access",
+      "title": "Require 'Admins - device-bound keys only' for admins on all apps",
+      "rationale": "Conditional Access must be satisfied by every applicable policy, so one strict policy closes the sign-in gap left by plain MFA or the built-in phishing-resistant strength (which accepts synced passkeys).",
+      "fixes": [
+        "R11",
+        "R12"
+      ],
+      "before": {
+        "adminsWithWeakGate": [
+          "alice@contoso.example",
+          "bob@contoso.example",
+          "carol@contoso.example",
+          "erin@contoso.example"
+        ]
+      },
+      "after": {
+        "authenticationStrength": {
+          "name": "Admins - device-bound keys only",
+          "allowedCombinations": [
+            "fido2",
+            "windowsHelloForBusiness",
+            "x509CertificateMultiFactor"
+          ],
+          "fido2AllowedAAGUIDs": [
+            "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa",
+            "cb69481e-8ff7-4039-93ec-0a2729a154a8",
+            "ee882879-721c-4913-9775-3dfcce97072a"
+          ]
+        },
+        "policy": "Admins: device-bound keys only (EffectivePasskey)",
+        "target": "Privileged users (sign-in and TAP)",
+        "breakGlassExcluded": "not targeted"
+      },
+      "notes": [
+        "Roll out in report-only first and check sign-in logs for admins without an approved key.",
+        "Emergency-access accounts are left out on purpose; protect them separately."
+      ]
+    },
+    {
+      "id": "C5",
+      "kind": "policy",
+      "title": "Exclude admins from Temporary Access Pass and make TAP single-use, 60 minutes",
+      "rationale": "Anyone who can issue an admin a TAP can register a passkey on that account.",
+      "fixes": [
+        "R13"
+      ],
+      "before": {
+        "isUsableOnce": false,
+        "maximumLifetimeInMinutes": 480,
+        "excluded": []
+      },
+      "after": {
+        "isUsableOnce": true,
+        "maximumLifetimeInMinutes": 60,
+        "excluded": [
+          "Privileged users (TAP excluded)"
+        ]
+      },
+      "notes": [
+        "Issue admin TAPs only through a documented, two-person process, by temporarily removing the admin from this group."
+      ]
+    },
+    {
+      "id": "C6",
+      "kind": "group",
+      "title": "Replace 'CA exclusions (legacy apps)' with a role-assignable group",
+      "rationale": "Only Privileged Role Administrators can change a role-assignable group, so owners and Groups Administrators can no longer move admins in or out of policy scope.",
+      "fixes": [
+        "R14"
+      ],
+      "before": {
+        "group": "CA exclusions (legacy apps)",
+        "isAssignableToRole": false,
+        "owners": 1,
+        "membershipRule": null
+      },
+      "after": {
+        "group": "CA exclusions (legacy apps) (role-assignable)",
+        "isAssignableToRole": true,
+        "owners": 0,
+        "members": 1
+      },
+      "notes": [
+        "isAssignableToRole can only be set when a group is created, so this is a new group."
+      ]
+    },
+    {
+      "id": "C7",
+      "kind": "policy",
+      "title": "Complete the authentication methods migration",
+      "rationale": "Legacy MFA and SSPR settings keep governing SMS and voice until the migration is marked complete.",
+      "fixes": [
+        "R15"
+      ],
+      "before": {
+        "policyMigrationState": "migrationInProgress"
+      },
+      "after": {
+        "policyMigrationState": "migrationComplete"
+      },
+      "notes": [
+        "Check that the methods policy enables everything users rely on before you complete it."
+      ]
     }
   ],
   "userTasks": [
     {
       "user": "carol@contoso.example",
+      "task": "Register a device-bound key, then delete the weak passkey",
+      "rule": "R2",
+      "due": "now"
+    },
+    {
+      "user": "erin@contoso.example",
       "task": "Register a device-bound key, then delete the weak passkey",
       "rule": "R2",
       "due": "now"
@@ -98,32 +231,52 @@
       "[critical] R1 Privileged user can register a synced passkey: alice@contoso.example",
       "[critical] R1 Privileged user can register a synced passkey: bob@contoso.example",
       "[critical] R1 Privileged user can register a synced passkey: carol@contoso.example",
+      "[critical] R1 Privileged user can register a synced passkey: erin@contoso.example",
+      "[critical] R11 Admin can register and sign in with a synced passkey: alice@contoso.example",
+      "[critical] R11 Admin can register and sign in with a synced passkey: bob@contoso.example",
+      "[critical] R11 Admin can register and sign in with a synced passkey: carol@contoso.example",
+      "[critical] R11 Admin can register and sign in with a synced passkey: erin@contoso.example",
+      "[critical] R14 Policy group can be changed by non-privileged admins: CA exclusions (legacy apps)",
+      "[high] R12 Admin sign-in accepts SMS or voice: erin@contoso.example",
+      "[high] R13 Temporary Access Pass can bootstrap a new passkey on an admin: alice@contoso.example",
+      "[high] R13 Temporary Access Pass can bootstrap a new passkey on an admin: bob@contoso.example",
+      "[high] R13 Temporary Access Pass can bootstrap a new passkey on an admin: breakglass01@contoso.example",
+      "[high] R13 Temporary Access Pass can bootstrap a new passkey on an admin: carol@contoso.example",
+      "[high] R13 Temporary Access Pass can bootstrap a new passkey on an admin: erin@contoso.example",
+      "[high] R15 Authentication methods migration not complete: tenant",
       "[high] R4 Privileged SMS/voice user in an 'all passkey types' profile: bob@contoso.example",
       "[medium] R6 Attested profile is bypassed by an overlapping profile: Admins - device-bound",
       "[medium] R8 Campaign allows unlimited snoozes: tenant"
     ],
     "remaining": [
+      "[critical] R16 Admin signed in with a synced passkey: carol@contoso.example",
       "[critical] R2 Privileged user holds a synced passkey: carol@contoso.example",
+      "[critical] R2 Privileged user holds a synced passkey: erin@contoso.example",
       "[critical] R7 Privileged user has no phishing-resistant method: bob@contoso.example",
+      "[high] R16 Admin still signs in with SMS or voice: bob@contoso.example",
       "[high] R3 SMS/voice-only user: bob@contoso.example",
       "[high] R3 SMS/voice-only user: dave@contoso.example",
       "[high] R3 SMS/voice-only user: frank_partner.example#EXT#@contoso.example",
+      "[info] R16 Users still signing in with SMS or voice: tenant",
+      "[medium] R12 Admin sign-in not gated by any enforced MFA policy: breakglass01@contoso.example",
       "[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example"
     ],
     "introduced": [
       "[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example"
     ],
     "beforeBySeverity": {
-      "critical": 5,
-      "high": 4,
-      "medium": 3
+      "critical": 13,
+      "high": 12,
+      "medium": 4,
+      "info": 1
     },
     "afterBySeverity": {
-      "critical": 2,
-      "high": 4,
-      "medium": 1
+      "critical": 4,
+      "high": 5,
+      "medium": 2,
+      "info": 1
     },
-    "privilegedSyncedBefore": 3,
+    "privilegedSyncedBefore": 4,
     "privilegedSyncedAfter": 0
   },
   "disclaimer": "Proposed changes for human review. EffectivePasskey never applies changes to a tenant."

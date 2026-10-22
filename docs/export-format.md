@@ -30,6 +30,20 @@ every group that holds a privileged role. `all_users` needs no entry.
 `userDisplayName`, `userType`, `methodsRegistered`. External users are detected from `#EXT#` in the
 UPN (or `identityCategory: "external"`); other guests count as internal guests.
 
+## Optional inputs
+
+These unlock R11 to R16. Without them those rules stay silent and the report lists which inputs it had.
+
+- **policy.json** may also carry `policyMigrationState` and a `temporaryAccessPass` method configuration
+  (`state`, `includeTargets`, `excludeTargets`, `isUsableOnce`, `defaultLifetimeInMinutes`, `maximumLifetimeInMinutes`).
+- **groups.json** entries may carry `isAssignableToRole`, `owners` (ids) and `membershipRule`.
+- **conditional_access.json**: `{"policies": [...], "authenticationStrengths": [...]}` from
+  `GET /identity/conditionalAccess/policies` and `.../authenticationStrength/policies`, with each custom strength's
+  `combinationConfigurations` (a `fido2CombinationConfiguration` carries `allowedAAGUIDs`). Built-in strengths do not
+  need to be listed.
+- **signins.json**: `GET /beta/auditLogs/signIns` rows with `userId`, `createdDateTime`, `appDisplayName`, `status`
+  and `authenticationDetails[].authenticationMethod`.
+
 ## roles.json
 ```json
 {

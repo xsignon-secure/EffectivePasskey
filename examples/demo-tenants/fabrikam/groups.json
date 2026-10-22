@@ -7,7 +7,8 @@
         "u-hank",
         "u-ivy",
         "u-liam"
-      ]
+      ],
+      "isAssignableToRole": false
     },
     {
       "id": "g-admins",
@@ -15,7 +16,8 @@
       "members": [
         "u-gina",
         "u-jack"
-      ]
+      ],
+      "isAssignableToRole": true
     },
     {
       "id": "g-contractors",
@@ -23,14 +25,17 @@
       "members": [
         "u-kim",
         "g-vendors-eu"
-      ]
+      ],
+      "isAssignableToRole": false,
+      "membershipRule": "user.companyName -eq \"Vendor\""
     },
     {
       "id": "g-vendors-eu",
       "displayName": "Vendors EU",
       "members": [
         "u-gina"
-      ]
+      ],
+      "isAssignableToRole": false
     }
   ]
 }

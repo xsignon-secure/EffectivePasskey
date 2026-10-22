@@ -114,7 +114,8 @@ class RuleTests(unittest.TestCase):
         self.assertTrue({("R1", "critical"), ("R3", "high"), ("R4", "high"), ("R7", "critical")} <= bob)
         self.assertIn(("R2", "critical"), rules_for(a, "carol@contoso.example"))
         self.assertIn(("R9", "medium"), rules_for(a, "breakglass01@contoso.example"))
-        self.assertEqual(rules_for(a, "erin@contoso.example"), set())
+        # Erin holds Helpdesk Administrator through a role-assignable group; only plain MFA covers her sign-in.
+        self.assertIn(("R12", "high"), rules_for(a, "erin@contoso.example"))
 
     def test_deadline_cohorts(self):
         a = audit("northwind")
@@ -147,7 +148,13 @@ class RuleTests(unittest.TestCase):
 
     def test_nested_overlap_reaches_admin(self):
         a = audit("fabrikam")
-        self.assertIn(("R1", "critical"), rules_for(a, "gina@fabrikam.example"))
+        # Registration is still weakened through the nested Contractors group, but the admin CA
+        # strength's AAGUID allow list blocks synced passkeys at sign-in, so R1 drops to high.
+        gina = rules_for(a, "gina@fabrikam.example")
+        self.assertIn(("R1", "high"), gina)
+        self.assertFalse(any(r == "R11" for r, _ in gina))
+        r1 = [f for f in a.findings if f.rule == "R1" and f.subject == "gina@fabrikam.example"][0]
+        self.assertTrue(any("Sign-in gate" in e for e in r1.evidence))
 
     def test_campaign_rules(self):
         a = audit("northwind")
@@ -166,7 +173,7 @@ class OutputTests(unittest.TestCase):
         r = report.build_result(audit("contoso"))
         self.assertEqual(r["summary"]["grade"], "F")
         self.assertEqual(r["deadlines"]["daysToMain"], 102)
-        self.assertEqual(r["summary"]["privilegedSyncedAllowed"], 3)
+        self.assertEqual(r["summary"]["privilegedSyncedAllowed"], 4)
         json.loads(report.to_json(r))
         self.assertTrue(report.to_csv(r).startswith("severity,rule"))
         self.assertIn("at least one profile allows it", report.to_markdown(r))

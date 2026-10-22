@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "tenant": "Contoso (synthetic demo)",
   "asOf": "2026-10-22",
@@ -13,18 +13,18 @@
   },
   "summary": {
     "users": 7,
-    "privileged": 4,
-    "privilegedSyncedAllowed": 3,
+    "privileged": 5,
+    "privilegedSyncedAllowed": 4,
     "smsFebCohort": 2,
     "smsJulCohort": 1,
     "fido2State": "enabled",
     "legacyPolicy": false,
     "findingsBySeverity": {
-      "critical": 5,
-      "high": 4,
-      "medium": 3,
+      "critical": 13,
+      "high": 12,
+      "medium": 4,
       "low": 0,
-      "info": 0
+      "info": 1
     },
     "grade": "F"
   },
@@ -99,6 +99,26 @@
       "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
     {
+      "key": "R1|user|erin@contoso.example|overlap",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "erin@contoso.example",
+      "subjectType": "user",
+      "userId": "u-erin",
+      "cohort": "",
+      "detail": "erin@contoso.example (Helpdesk Administrator via group 'Helpdesk') can register: Synced passkey, any provider, unattested. No strict profile covers them at all.",
+      "evidence": [
+        "erin@contoso.example holds privileged role(s): Helpdesk Administrator via group 'Helpdesk'",
+        "All users (tenant-wide target) \u2192 scoped to profile 'Default'",
+        "Profile 'Default': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Default')"
+      ],
+      "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
       "key": "R2|user|carol@contoso.example|Privileged user holds a synced passkey",
       "rule": "R2",
       "ruleName": "Weak key already held",
@@ -118,6 +138,23 @@
       "action": "Register a device-bound, attested key for this admin, then remove this passkey."
     },
     {
+      "key": "R2|user|erin@contoso.example|Privileged user holds a synced passkey",
+      "rule": "R2",
+      "ruleName": "Weak key already held",
+      "severity": "critical",
+      "title": "Privileged user holds a synced passkey",
+      "subject": "erin@contoso.example",
+      "subjectType": "user",
+      "userId": "u-erin",
+      "cohort": "",
+      "detail": "erin@contoso.example has a synced passkey registered (from the registration details report).",
+      "evidence": [
+        "erin@contoso.example holds privileged role(s): Helpdesk Administrator via group 'Helpdesk'",
+        "methodsRegistered includes 'passKeySynced'"
+      ],
+      "action": "Have the user register a device-bound key, then delete the synced passkey from their methods."
+    },
+    {
       "key": "R7|user|bob@contoso.example|Privileged user has no phishing-resistant method",
       "rule": "R7",
       "ruleName": "No phishing-resistant method",
@@ -133,6 +170,125 @@
         "Registered methods: mobilePhone, sms"
       ],
       "action": "Issue this admin a device-bound passkey (security key or Authenticator) and require it with an authentication strength."
+    },
+    {
+      "key": "R11|user|alice@contoso.example|signin-synced",
+      "rule": "R11",
+      "ruleName": "Synced passkey at sign-in",
+      "severity": "critical",
+      "title": "Admin can register and sign in with a synced passkey",
+      "subject": "alice@contoso.example",
+      "subjectType": "user",
+      "userId": "u-alice",
+      "cohort": "",
+      "detail": "alice@contoso.example's sign-in gate accepts synced passkeys and nothing upstream stops one being registered.",
+      "evidence": [
+        "alice@contoso.example holds privileged role(s)",
+        "CA 'Admins: require phishing-resistant MFA' requires strength 'Phishing-resistant MFA' (fido2, windowsHelloForBusiness, x509CertificateMultiFactor; any passkey or security key)",
+        "CA 'All users: require MFA' grant: mfa",
+        "Conditional Access requires every applicable policy to be satisfied; none of these rejects a synced passkey.",
+        "Microsoft's built-in 'Phishing-resistant MFA' strength accepts synced passkeys; only a custom strength with a FIDO2 AAGUID allow list of device-bound keys excludes them.",
+        "Registration also allows a synced passkey"
+      ],
+      "action": "Create a custom authentication strength allowing only FIDO2 with your approved device-bound AAGUIDs and require it for admin roles in Conditional Access."
+    },
+    {
+      "key": "R11|user|bob@contoso.example|signin-synced",
+      "rule": "R11",
+      "ruleName": "Synced passkey at sign-in",
+      "severity": "critical",
+      "title": "Admin can register and sign in with a synced passkey",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "bob@contoso.example's sign-in gate accepts synced passkeys and nothing upstream stops one being registered.",
+      "evidence": [
+        "bob@contoso.example holds privileged role(s)",
+        "CA 'Admins: require phishing-resistant MFA' requires strength 'Phishing-resistant MFA' (fido2, windowsHelloForBusiness, x509CertificateMultiFactor; any passkey or security key)",
+        "CA 'All users: require MFA' grant: mfa",
+        "Conditional Access requires every applicable policy to be satisfied; none of these rejects a synced passkey.",
+        "Microsoft's built-in 'Phishing-resistant MFA' strength accepts synced passkeys; only a custom strength with a FIDO2 AAGUID allow list of device-bound keys excludes them.",
+        "Registration also allows a synced passkey"
+      ],
+      "action": "Create a custom authentication strength allowing only FIDO2 with your approved device-bound AAGUIDs and require it for admin roles in Conditional Access."
+    },
+    {
+      "key": "R11|user|carol@contoso.example|signin-synced",
+      "rule": "R11",
+      "ruleName": "Synced passkey at sign-in",
+      "severity": "critical",
+      "title": "Admin can register and sign in with a synced passkey",
+      "subject": "carol@contoso.example",
+      "subjectType": "user",
+      "userId": "u-carol",
+      "cohort": "",
+      "detail": "carol@contoso.example's sign-in gate accepts synced passkeys and nothing upstream stops one being registered.",
+      "evidence": [
+        "carol@contoso.example holds privileged role(s)",
+        "CA 'Admins: require phishing-resistant MFA' requires strength 'Phishing-resistant MFA' (fido2, windowsHelloForBusiness, x509CertificateMultiFactor; any passkey or security key)",
+        "CA 'All users: require MFA' grant: mfa",
+        "Conditional Access requires every applicable policy to be satisfied; none of these rejects a synced passkey.",
+        "Microsoft's built-in 'Phishing-resistant MFA' strength accepts synced passkeys; only a custom strength with a FIDO2 AAGUID allow list of device-bound keys excludes them.",
+        "Registration also allows a synced passkey"
+      ],
+      "action": "Create a custom authentication strength allowing only FIDO2 with your approved device-bound AAGUIDs and require it for admin roles in Conditional Access."
+    },
+    {
+      "key": "R11|user|erin@contoso.example|signin-synced",
+      "rule": "R11",
+      "ruleName": "Synced passkey at sign-in",
+      "severity": "critical",
+      "title": "Admin can register and sign in with a synced passkey",
+      "subject": "erin@contoso.example",
+      "subjectType": "user",
+      "userId": "u-erin",
+      "cohort": "",
+      "detail": "erin@contoso.example's sign-in gate accepts synced passkeys and nothing upstream stops one being registered.",
+      "evidence": [
+        "erin@contoso.example holds privileged role(s)",
+        "CA 'All users: require MFA' grant: mfa",
+        "Conditional Access requires every applicable policy to be satisfied; none of these rejects a synced passkey.",
+        "Microsoft's built-in 'Phishing-resistant MFA' strength accepts synced passkeys; only a custom strength with a FIDO2 AAGUID allow list of device-bound keys excludes them.",
+        "Registration also allows a synced passkey"
+      ],
+      "action": "Create a custom authentication strength allowing only FIDO2 with your approved device-bound AAGUIDs and require it for admin roles in Conditional Access."
+    },
+    {
+      "key": "R14|group|CA exclusions (legacy apps)|group",
+      "rule": "R14",
+      "ruleName": "Tamperable policy group",
+      "severity": "critical",
+      "title": "Policy group can be changed by non-privileged admins",
+      "subject": "CA exclusions (legacy apps)",
+      "subjectType": "group",
+      "userId": "",
+      "cohort": "",
+      "detail": "'CA exclusions (legacy apps)' is excluded from CA 'Admins: require phishing-resistant MFA', which covers admins (and 1 more use) but is not role-assignable. Adding an admin to it removes their sign-in requirement.",
+      "evidence": [
+        "Group 'CA exclusions (legacy apps)' is excluded from CA 'Admins: require phishing-resistant MFA', which covers admins",
+        "Group 'CA exclusions (legacy apps)' is excluded from CA 'All users: require MFA', which covers admins",
+        "isAssignableToRole = false, so Groups Administrators, User Administrators and the group's owners can change its membership",
+        "Owners: dave@contoso.example",
+        "Adding an admin to it removes their sign-in requirement."
+      ],
+      "action": "Use a role-assignable group (isAssignableToRole = true, no owners) for this target, so only Privileged Role Administrators can change it."
+    },
+    {
+      "key": "R16|user|carol@contoso.example|synced",
+      "rule": "R16",
+      "ruleName": "Sign-in evidence",
+      "severity": "critical",
+      "title": "Admin signed in with a synced passkey",
+      "subject": "carol@contoso.example",
+      "subjectType": "user",
+      "userId": "u-carol",
+      "cohort": "",
+      "detail": "1 successful sign-in(s) by carol@contoso.example used a synced passkey.",
+      "evidence": [
+        "2026-10-21T09:40:00Z \u00b7 Microsoft Entra admin center \u00b7 Passkey (synced)"
+      ],
+      "action": "Replace the synced passkey with a device-bound key and block synced passkeys at sign-in (R11)."
     },
     {
       "key": "R3|user|bob@contoso.example|sms-only",
@@ -211,6 +367,150 @@
       "action": "Move this admin into an admin-only device-bound profile and out of the all-types profile's target."
     },
     {
+      "key": "R12|user|erin@contoso.example|signin-gate",
+      "rule": "R12",
+      "ruleName": "Weak admin sign-in gate",
+      "severity": "high",
+      "title": "Admin sign-in accepts SMS or voice",
+      "subject": "erin@contoso.example",
+      "subjectType": "user",
+      "userId": "u-erin",
+      "cohort": "",
+      "detail": "Every CA policy covering erin@contoso.example can be satisfied with SMS or voice MFA.",
+      "evidence": [
+        "CA 'All users: require MFA' grant: mfa"
+      ],
+      "action": "Replace plain MFA with a phishing-resistant authentication strength for admin roles."
+    },
+    {
+      "key": "R13|user|alice@contoso.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "high",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "alice@contoso.example",
+      "subjectType": "user",
+      "userId": "u-alice",
+      "cohort": "",
+      "detail": "1 other user(s) can issue alice@contoso.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and alice@contoso.example is in its target",
+        "isUsableOnce = False; maximum lifetime = 480 min",
+        "1 other user(s) can issue a TAP to them: breakglass01@contoso.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R13|user|bob@contoso.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "high",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "2 other user(s) can issue bob@contoso.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and bob@contoso.example is in its target",
+        "isUsableOnce = False; maximum lifetime = 480 min",
+        "2 other user(s) can issue a TAP to them: alice@contoso.example, breakglass01@contoso.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R13|user|breakglass01@contoso.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "high",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "breakglass01@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bg1",
+      "cohort": "",
+      "detail": "1 other user(s) can issue breakglass01@contoso.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and breakglass01@contoso.example is in its target",
+        "isUsableOnce = False; maximum lifetime = 480 min",
+        "1 other user(s) can issue a TAP to them: alice@contoso.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R13|user|carol@contoso.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "high",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "carol@contoso.example",
+      "subjectType": "user",
+      "userId": "u-carol",
+      "cohort": "",
+      "detail": "2 other user(s) can issue carol@contoso.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and carol@contoso.example is in its target",
+        "isUsableOnce = False; maximum lifetime = 480 min",
+        "2 other user(s) can issue a TAP to them: alice@contoso.example, breakglass01@contoso.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R13|user|erin@contoso.example|tap",
+      "rule": "R13",
+      "ruleName": "TAP bootstrap path",
+      "severity": "high",
+      "title": "Temporary Access Pass can bootstrap a new passkey on an admin",
+      "subject": "erin@contoso.example",
+      "subjectType": "user",
+      "userId": "u-erin",
+      "cohort": "",
+      "detail": "2 other user(s) can issue erin@contoso.example a TAP and register a passkey with it.",
+      "evidence": [
+        "TAP is enabled and erin@contoso.example is in its target",
+        "isUsableOnce = False; maximum lifetime = 480 min",
+        "2 other user(s) can issue a TAP to them: alice@contoso.example, breakglass01@contoso.example",
+        "A TAP lets the holder register a new passkey on the account. Whoever issues it can enrol their own key."
+      ],
+      "action": "Exclude admin groups from the TAP policy (issue admin TAPs through a break-glass process), or set isUsableOnce = true and a maximum lifetime of 60 minutes or less."
+    },
+    {
+      "key": "R15|tenant|tenant|Authentication methods migration not complete",
+      "rule": "R15",
+      "ruleName": "Migration incomplete",
+      "severity": "high",
+      "title": "Authentication methods migration not complete",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "policyMigrationState is 'migrationInProgress'. Legacy per-user MFA and SSPR settings still decide SMS and voice for 3 user(s) with phone methods, so disabling them in the methods policy alone may not hold.",
+      "evidence": [
+        "policyMigrationState = migrationInProgress",
+        "Microsoft retired the legacy MFA and SSPR method settings; the methods policy is the only one that should govern."
+      ],
+      "action": "Finish the migration (Authentication methods > Manage migration > Migration complete)."
+    },
+    {
+      "key": "R16|user|bob@contoso.example|phone",
+      "rule": "R16",
+      "ruleName": "Sign-in evidence",
+      "severity": "high",
+      "title": "Admin still signs in with SMS or voice",
+      "subject": "bob@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bob",
+      "cohort": "",
+      "detail": "1 successful sign-in(s) by bob@contoso.example used SMS or voice.",
+      "evidence": [
+        "2026-10-20T08:12:00Z \u00b7 Azure Portal \u00b7 Text message"
+      ],
+      "action": "Move this admin to a device-bound passkey now; their SMS sign-ins stop working on the retirement date."
+    },
+    {
       "key": "R6|profile|Admins - device-bound|Attested profile is bypassed by an overlapping profile",
       "rule": "R6",
       "ruleName": "Attestation illusion",
@@ -261,6 +561,40 @@
         "Exclusion wins over every inclusion (Microsoft Learn)."
       ],
       "action": "Confirm the break-glass design (e.g. certificate-based auth or a dedicated FIDO2 key) is documented and tested."
+    },
+    {
+      "key": "R12|user|breakglass01@contoso.example|signin-gate",
+      "rule": "R12",
+      "ruleName": "Weak admin sign-in gate",
+      "severity": "medium",
+      "title": "Admin sign-in not gated by any enforced MFA policy",
+      "subject": "breakglass01@contoso.example",
+      "subjectType": "user",
+      "userId": "u-bg1",
+      "cohort": "",
+      "detail": "No enforced Conditional Access policy requires MFA or an authentication strength for breakglass01@contoso.example.",
+      "evidence": [
+        "breakglass01@contoso.example holds privileged role(s)",
+        "3 CA policies exported; none enforced for this user on all apps or admin portals with MFA or a strength",
+        "Name suggests an emergency-access account. Excluding it from CA can be intentional; it then needs a strong credential, sign-in alerts and a tested procedure."
+      ],
+      "action": "Confirm the emergency-access design and alert on every sign-in by this account."
+    },
+    {
+      "key": "R16|tenant|tenant|phone-workforce",
+      "rule": "R16",
+      "ruleName": "Sign-in evidence",
+      "severity": "info",
+      "title": "Users still signing in with SMS or voice",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "1 non-admin user(s) signed in with SMS or voice in the exported window.",
+      "evidence": [
+        "From signins.json"
+      ],
+      "action": "Prioritize these users in the registration campaign."
     }
   ],
   "users": [
@@ -293,7 +627,9 @@
         }
       ],
       "findings": [
-        "R1"
+        "R1",
+        "R11",
+        "R13"
       ]
     },
     {
@@ -321,7 +657,10 @@
         "R1",
         "R3",
         "R4",
-        "R7"
+        "R7",
+        "R11",
+        "R13",
+        "R16"
       ]
     },
     {
@@ -354,7 +693,38 @@
       ],
       "findings": [
         "R1",
-        "R2"
+        "R2",
+        "R11",
+        "R13",
+        "R16"
+      ]
+    },
+    {
+      "id": "u-erin",
+      "upn": "erin@contoso.example",
+      "displayName": "Erin Finance",
+      "category": "member",
+      "privileged": true,
+      "roles": "Helpdesk Administrator via group 'Helpdesk'",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Default"
+      ],
+      "permittedBy": [
+        "Default"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": [
+        "R1",
+        "R2",
+        "R11",
+        "R12",
+        "R13"
       ]
     },
     {
@@ -380,28 +750,6 @@
       "findings": [
         "R3"
       ]
-    },
-    {
-      "id": "u-erin",
-      "upn": "erin@contoso.example",
-      "displayName": "Erin Finance",
-      "category": "member",
-      "privileged": false,
-      "roles": "",
-      "status": "allowed",
-      "rank": 5,
-      "weakestCredential": "Synced passkey, any provider, unattested",
-      "syncedAllowed": true,
-      "profiles": [
-        "Default"
-      ],
-      "permittedBy": [
-        "Default"
-      ],
-      "phoneOnly": false,
-      "smsCohort": "",
-      "keys": [],
-      "findings": []
     },
     {
       "id": "u-frank",
@@ -444,7 +792,9 @@
       "smsCohort": "",
       "keys": [],
       "findings": [
-        "R9"
+        "R9",
+        "R12",
+        "R13"
       ]
     }
   ],
@@ -515,7 +865,278 @@
     "R10": {
       "name": "Policy hygiene",
       "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    },
+    "R11": {
+      "name": "Synced passkey at sign-in",
+      "definition": "Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it."
+    },
+    "R12": {
+      "name": "Weak admin sign-in gate",
+      "definition": "An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice."
+    },
+    "R13": {
+      "name": "TAP bootstrap path",
+      "definition": "Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account."
+    },
+    "R14": {
+      "name": "Tamperable policy group",
+      "definition": "A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it."
+    },
+    "R15": {
+      "name": "Migration incomplete",
+      "definition": "Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete."
+    },
+    "R16": {
+      "name": "Sign-in evidence",
+      "definition": "Sign-in logs show admins using SMS, voice or synced passkeys."
     }
+  },
+  "attackPaths": [
+    {
+      "user": "alice@contoso.example",
+      "userId": "u-alice",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Global Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Default, Admins - device-bound (All users (tenant-wide target); member of group 'Privileged Admins')",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "device-bound key held",
+          "risk": "ok"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Synced passkey accepted",
+          "risk": "bad"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "1 other user(s) can issue a TAP",
+          "risk": "bad"
+        },
+        {
+          "label": "Signed in with",
+          "value": "FIDO2 security key",
+          "risk": "ok"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R11",
+        "R13"
+      ]
+    },
+    {
+      "user": "bob@contoso.example",
+      "userId": "u-bob",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Security Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Default, Admins - device-bound (All users (tenant-wide target); member of group 'Privileged Admins')",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "no passkey",
+          "risk": "warn"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Synced passkey accepted",
+          "risk": "bad"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "2 other user(s) can issue a TAP",
+          "risk": "bad"
+        },
+        {
+          "label": "Signed in with",
+          "value": "Text message",
+          "risk": "bad"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R3",
+        "R4",
+        "R7",
+        "R11",
+        "R13",
+        "R16"
+      ]
+    },
+    {
+      "user": "breakglass01@contoso.example",
+      "userId": "u-bg1",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Global Administrator",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Excluded from passkey policy",
+          "risk": "warn"
+        },
+        {
+          "label": "Holds",
+          "value": "no passkey",
+          "risk": "warn"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "No enforced CA policy requires MFA",
+          "risk": "bad"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "1 other user(s) can issue a TAP",
+          "risk": "bad"
+        },
+        {
+          "label": "Signed in with",
+          "value": "no sign-ins in export",
+          "risk": "info"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R9",
+        "R12",
+        "R13"
+      ]
+    },
+    {
+      "user": "carol@contoso.example",
+      "userId": "u-carol",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Privileged Role Administrator (PIM eligible) via group 'Tier 0 Role Holders (role-assignable)'",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Default, Admins - device-bound (All users (tenant-wide target); member of 'Tier 0 Role Holders (role-assignable)' \u2192 'Privileged Admins' (nested))",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "synced/unattested key held",
+          "risk": "bad"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "Synced passkey accepted",
+          "risk": "bad"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "2 other user(s) can issue a TAP",
+          "risk": "bad"
+        },
+        {
+          "label": "Signed in with",
+          "value": "Passkey (synced)",
+          "risk": "bad"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R2",
+        "R11",
+        "R13",
+        "R16"
+      ]
+    },
+    {
+      "user": "erin@contoso.example",
+      "userId": "u-erin",
+      "steps": [
+        {
+          "label": "Role",
+          "value": "Helpdesk Administrator via group 'Helpdesk'",
+          "risk": "info"
+        },
+        {
+          "label": "Passkey scope",
+          "value": "Default (All users (tenant-wide target))",
+          "risk": "info"
+        },
+        {
+          "label": "Can register",
+          "value": "Synced passkey, any provider, unattested",
+          "risk": "bad"
+        },
+        {
+          "label": "Holds",
+          "value": "synced/unattested key held",
+          "risk": "bad"
+        },
+        {
+          "label": "Sign-in gate",
+          "value": "SMS/voice accepted",
+          "risk": "bad"
+        },
+        {
+          "label": "TAP bootstrap",
+          "value": "2 other user(s) can issue a TAP",
+          "risk": "bad"
+        },
+        {
+          "label": "Signed in with",
+          "value": "no sign-ins in export",
+          "risk": "info"
+        }
+      ],
+      "verdict": "exposed",
+      "rules": [
+        "R1",
+        "R2",
+        "R11",
+        "R12",
+        "R13"
+      ]
+    }
+  ],
+  "coverage": {
+    "conditionalAccess": true,
+    "signIns": true,
+    "temporaryAccessPass": true,
+    "migrationState": true,
+    "groupOwnership": true
   },
   "notes": [
     "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."

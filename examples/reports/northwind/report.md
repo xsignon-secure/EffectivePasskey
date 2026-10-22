@@ -1,6 +1,6 @@
 # EffectivePasskey report: Northwind (synthetic demo)
 
-As of 2026-10-22 · grade **F** · EffectivePasskey 0.2.0
+As of 2026-10-22 · grade **F** · EffectivePasskey 0.3.0
 
 - **102 days** to 1 Feb 2027 (SMS/voice retirement); 252 days to 1 Jul 2027 (Global Admins, external users)
 - 8 users analyzed, 2 privileged, **1 privileged users can register a synced passkey**
@@ -8,6 +8,13 @@ As of 2026-10-22 · grade **F** · EffectivePasskey 0.2.0
 - Findings: 8 critical, 1 high, 2 medium, 1 low, 0 info
 
 Overlapping passkey profiles resolve by *at least one profile allows it*, not most-restrictive-wins. Each user's effective policy below is the union of every profile they are scoped to.
+
+## Admin attack paths
+
+| Admin | Verdict | Passkey scope | Can register | Holds | Sign-in gate |
+|---|---|---|---|---|---|
+| oscar@northwind.example | exposed | Default (legacy FIDO2 settings) (member of group 'Passkey Pilot') | Synced passkey, any provider, unattested | no passkey | Not evaluated (no Conditional Access export) |
+| nora@northwind.example | partial | - | Not targeted by passkey policy | no passkey | Not evaluated (no Conditional Access export) |
 
 ## Findings
 
@@ -180,9 +187,15 @@ Evidence:
 - **R8 Campaign gap**: The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline.
 - **R9 Excluded but privileged**: A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all.
 - **R10 Policy hygiene**: Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs.
+- **R11 Synced passkey at sign-in**: Every Conditional Access policy covering an admin accepts a synced passkey. Microsoft's built-in phishing-resistant strength does; only a FIDO2 AAGUID allow list stops it.
+- **R12 Weak admin sign-in gate**: An admin is covered by no enforced MFA policy, or every policy covering them accepts SMS or voice.
+- **R13 TAP bootstrap path**: Temporary Access Pass is enabled for an admin, so anyone who can issue them a TAP can register a passkey on their account.
+- **R14 Tamperable policy group**: A group that decides passkey, TAP or Conditional Access scope is not role-assignable, so non-privileged admins or owners can change who is in it.
+- **R15 Migration incomplete**: Legacy MFA and SSPR settings still govern SMS and voice because the authentication methods migration is not complete.
+- **R16 Sign-in evidence**: Sign-in logs show admins using SMS, voice or synced passkeys.
 
 ---
 
 _Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope._
 
-_Generated offline by EffectivePasskey 0.2.0. No tenant credentials were used by the analyzer._
+_Generated offline by EffectivePasskey 0.3.0. No tenant credentials were used by the analyzer._
