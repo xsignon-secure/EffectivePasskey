@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "effective-passkey"
+dynamic = ["version"]
+description = "Offline, read-only Entra ID auditor that computes each user's effective passkey policy after profile overlaps resolve."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+keywords = ["entra", "azure-ad", "passkey", "fido2", "audit", "identity"]
+
+[project.scripts]
+effective-passkey = "effective_passkey.cli:main"
+
+[tool.setuptools]
+packages = ["effective_passkey"]
+
+[tool.setuptools.dynamic]
+version = {attr = "effective_passkey.__version__"}

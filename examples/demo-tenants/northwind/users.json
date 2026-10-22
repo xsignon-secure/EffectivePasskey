@@ -1,0 +1,80 @@
+{
+  "value": [
+    {
+      "id": "u-nora",
+      "userPrincipalName": "nora@northwind.example",
+      "userDisplayName": "Nora Global",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone",
+        "officePhone"
+      ]
+    },
+    {
+      "id": "u-oscar",
+      "userPrincipalName": "oscar@northwind.example",
+      "userDisplayName": "Oscar UserAdmin",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone",
+        "microsoftAuthenticatorPush"
+      ]
+    },
+    {
+      "id": "u-paula",
+      "userPrincipalName": "paula@northwind.example",
+      "userDisplayName": "Paula Pilot",
+      "userType": "member",
+      "methodsRegistered": [
+        "passKeyDeviceBoundAuthenticator"
+      ]
+    },
+    {
+      "id": "u-quinn",
+      "userPrincipalName": "quinn@northwind.example",
+      "userDisplayName": "Quinn Store",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone",
+        "email"
+      ]
+    },
+    {
+      "id": "u-ravi",
+      "userPrincipalName": "ravi@northwind.example",
+      "userDisplayName": "Ravi Driver",
+      "userType": "member",
+      "methodsRegistered": [
+        "mobilePhone"
+      ]
+    },
+    {
+      "id": "u-sara",
+      "userPrincipalName": "sara.contractor@northwind.example",
+      "userDisplayName": "Sara (internal guest)",
+      "userType": "guest",
+      "methodsRegistered": [
+        "mobilePhone"
+      ]
+    },
+    {
+      "id": "u-tom",
+      "userPrincipalName": "tom_supplier.example#EXT#@northwind.example",
+      "userDisplayName": "Tom (Supplier)",
+      "userType": "guest",
+      "methodsRegistered": [
+        "mobilePhone"
+      ]
+    },
+    {
+      "id": "u-uma",
+      "userPrincipalName": "uma@northwind.example",
+      "userDisplayName": "Uma Analyst",
+      "userType": "member",
+      "methodsRegistered": [
+        "microsoftAuthenticatorPush",
+        "softwareOneTimePasscode"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "roleAssignments": [
+    {
+      "principalId": "u-nora",
+      "roleTemplateId": "62e90394-69f5-4237-9190-012177145e10",
+      "assignmentType": "active"
+    },
+    {
+      "principalId": "u-oscar",
+      "roleTemplateId": "fe930be7-5e62-47db-91af-98c3a49a38b1",
+      "assignmentType": "active"
+    }
+  ],
+  "fido2Methods": {
+    "u-nora": [],
+    "u-oscar": [],
+    "u-quinn": [],
+    "u-ravi": [],
+    "u-sara": [],
+    "u-tom": []
+  }
+}

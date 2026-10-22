@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Demo reports are up to date
+        run: |
+          for t in contoso fabrikam northwind; do
+            python -m effective_passkey analyze examples/demo-tenants/$t -o examples/reports/$t --as-of 2026-10-22 -q
+          done
+          git diff --exit-code examples/reports
+      - name: Package installs and runs
+        run: |
+          pip install .
+          effective-passkey --version

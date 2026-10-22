@@ -1,0 +1,48 @@
+{
+  "roleAssignments": [
+    {
+      "principalId": "u-alice",
+      "roleTemplateId": "62e90394-69f5-4237-9190-012177145e10",
+      "assignmentType": "active"
+    },
+    {
+      "principalId": "u-bob",
+      "roleTemplateId": "194ae4cb-b126-40b2-bd5b-6091b380977d",
+      "assignmentType": "active"
+    },
+    {
+      "principalId": "g-tier0",
+      "roleTemplateId": "e8611ab8-c189-46e8-94e1-60213ab1f814",
+      "assignmentType": "eligible"
+    },
+    {
+      "principalId": "u-bg1",
+      "roleTemplateId": "62e90394-69f5-4237-9190-012177145e10",
+      "assignmentType": "active"
+    }
+  ],
+  "fido2Methods": {
+    "u-alice": [
+      {
+        "id": "k1",
+        "displayName": "YubiKey 5 NFC",
+        "aaGuid": "ee882879-721c-4913-9775-3dfcce97072a",
+        "attestationLevel": "attested",
+        "createdDateTime": "2026-05-12T09:00:00Z"
+      }
+    ],
+    "u-bob": [],
+    "u-carol": [
+      {
+        "id": "k2",
+        "displayName": "iPhone passkey",
+        "aaGuid": "fbfc3007-154e-4ecc-8c0b-6e020557d7bd",
+        "attestationLevel": "notAttested",
+        "createdDateTime": "2026-09-03T14:20:00Z"
+      }
+    ],
+    "u-bg1": [],
+    "u-dave": [],
+    "u-frank": []
+  }
+}

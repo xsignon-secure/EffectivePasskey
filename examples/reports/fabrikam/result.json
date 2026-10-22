@@ -1,0 +1,473 @@
+{
+  "tool": {
+    "name": "EffectivePasskey",
+    "version": "0.1.0"
+  },
+  "tenant": "Fabrikam (synthetic demo)",
+  "asOf": "2026-10-22",
+  "deadlines": {
+    "main": "2027-02-01",
+    "late": "2027-07-01",
+    "daysToMain": 102,
+    "daysToLate": 252
+  },
+  "summary": {
+    "users": 6,
+    "privileged": 2,
+    "privilegedSyncedAllowed": 1,
+    "smsFebCohort": 1,
+    "smsJulCohort": 0,
+    "fido2State": "enabled",
+    "legacyPolicy": false,
+    "findingsBySeverity": {
+      "critical": 1,
+      "high": 3,
+      "medium": 3,
+      "low": 2,
+      "info": 1
+    },
+    "grade": "D"
+  },
+  "findings": [
+    {
+      "key": "R1|user|gina@fabrikam.example|Privileged user can register a synced passkey",
+      "rule": "R1",
+      "ruleName": "Overlap weakening",
+      "severity": "critical",
+      "title": "Privileged user can register a synced passkey",
+      "subject": "gina@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-gina",
+      "cohort": "",
+      "detail": "gina@fabrikam.example (Exchange Administrator) can register: Synced passkey, any provider, unattested. Their stricter admin profile is overridden.",
+      "evidence": [
+        "gina@fabrikam.example holds privileged role(s): Exchange Administrator",
+        "member of 'Vendors EU' \u2192 'Contractors' (nested) \u2192 scoped to profile 'Contractors'",
+        "member of group 'IT Admins' \u2192 scoped to profile 'Admins - security keys (attested)'",
+        "Profile 'Contractors': deviceBound + synced; no attestation; no AAGUID restriction",
+        "Profile 'Admins - security keys (attested)': deviceBound + synced; attestation required; allow-list of 1 AAGUID(s)",
+        "Microsoft rule: a passkey is allowed if it satisfies at least one scoped profile; there is no most-restrictive-wins.",
+        "Effective weakest credential: Synced passkey, any provider, unattested (permitted by 'Contractors')",
+        "The stricter profile(s) 'Admins - security keys (attested)' never get a say for this credential."
+      ],
+      "action": "Exclude privileged users from the target(s) 'Contractors' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
+    },
+    {
+      "key": "R3|user|liam@fabrikam.example|SMS/voice-only user",
+      "rule": "R3",
+      "ruleName": "Deadline cohort",
+      "severity": "high",
+      "title": "SMS/voice-only user",
+      "subject": "liam@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-liam",
+      "cohort": "1 Feb 2027",
+      "detail": "liam@fabrikam.example relies only on sms. Blocking registration prompt from 1 Feb 2027.",
+      "evidence": [
+        "Registered MFA methods: sms (no non-phone MFA method)",
+        "User category: member",
+        "Deadline cohort: 1 Feb 2027; 102 day(s) from 2026-10-22",
+        "Passkey policy status: Device-bound, attested, allow-listed authenticators only"
+      ],
+      "action": "Have the user register a passkey (device-bound preferred) before the deadline."
+    },
+    {
+      "key": "R5|user|hank@fabrikam.example|Registered passkey not accepted by any scoped profile",
+      "rule": "R5",
+      "ruleName": "AAGUID trap",
+      "severity": "high",
+      "title": "Registered passkey not accepted by any scoped profile",
+      "subject": "hank@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-hank",
+      "cohort": "",
+      "detail": "hank@fabrikam.example's key 'YubiKey 5' (AAGUID cb69481e-8ff7-4039-93ec-0a2729a154a8) satisfies none of their profiles.",
+      "evidence": [
+        "Registered key: YubiKey 5, deviceBound, AAGUID cb69481e-8ff7-4039-93ec-0a2729a154a8",
+        "Profile 'Workforce - Authenticator only': deviceBound; attestation required; allow-list of 2 AAGUID(s) \u2192 rejects this key"
+      ],
+      "action": "Add AAGUID cb69481e-8ff7-4039-93ec-0a2729a154a8 to an allow list that covers this user, or have them register a permitted key before the change lands."
+    },
+    {
+      "key": "R5|user|jack@fabrikam.example|Registered passkey not accepted by any scoped profile",
+      "rule": "R5",
+      "ruleName": "AAGUID trap",
+      "severity": "high",
+      "title": "Registered passkey not accepted by any scoped profile",
+      "subject": "jack@fabrikam.example",
+      "subjectType": "user",
+      "userId": "u-jack",
+      "cohort": "",
+      "detail": "jack@fabrikam.example's key 'YubiKey 5 NFC (FW 5.7)' (AAGUID a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa) satisfies none of their profiles.",
+      "evidence": [
+        "Registered key: YubiKey 5 NFC (FW 5.7), deviceBound, AAGUID a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa",
+        "Profile 'Admins - security keys (attested)': deviceBound + synced; attestation required; allow-list of 1 AAGUID(s) \u2192 rejects this key"
+      ],
+      "action": "Add AAGUID a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa to an allow list that covers this user, or have them register a permitted key before the change lands."
+    },
+    {
+      "key": "R6|profile|Admins - security keys (attested)|Attested profile lists synced passkeys",
+      "rule": "R6",
+      "ruleName": "Attestation illusion",
+      "severity": "medium",
+      "title": "Attested profile lists synced passkeys",
+      "subject": "Admins - security keys (attested)",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "'Admins - security keys (attested)' requires attestation and also lists synced passkeys. Synced passkeys cannot be attested, so that setting is dead weight and suggests a misunderstanding.",
+      "evidence": [
+        "Profile 'Admins - security keys (attested)': deviceBound + synced; attestation required; allow-list of 1 AAGUID(s)",
+        "Attestation is not possible for synced passkeys (Microsoft Learn)."
+      ],
+      "action": "Remove 'synced' from this profile, or drop the attestation claim and document it as a synced profile."
+    },
+    {
+      "key": "R6|profile|Admins - security keys (attested)|Attested profile is bypassed by an overlapping profile",
+      "rule": "R6",
+      "ruleName": "Attestation illusion",
+      "severity": "medium",
+      "title": "Attested profile is bypassed by an overlapping profile",
+      "subject": "Admins - security keys (attested)",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "1 of 2 users scoped to attested profile 'Admins - security keys (attested)' can still register unattested passkeys through another profile.",
+      "evidence": [
+        "Users affected: gina@fabrikam.example",
+        "Union semantics: the attested profile only constrains users who have no looser profile."
+      ],
+      "action": "Remove the users of 'Admins - security keys (attested)' from the targets of looser profiles, or accept that 'Admins - security keys (attested)' is not an attestation control for them."
+    },
+    {
+      "key": "R8|tenant|tenant|Registration campaign is off",
+      "rule": "R8",
+      "ruleName": "Campaign gap",
+      "severity": "medium",
+      "title": "Registration campaign is off",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "1 SMS/voice-only user(s) and no registration campaign to nudge them before the deadline.",
+      "evidence": [
+        "Campaign state: disabled"
+      ],
+      "action": "Enable the registration campaign for the SMS/voice cohort, targeting passkeys, with limited snoozes."
+    },
+    {
+      "key": "R10|profile|Pilot (unused)|Profile not targeted by any group",
+      "rule": "R10",
+      "ruleName": "Policy hygiene",
+      "severity": "low",
+      "title": "Profile not targeted by any group",
+      "subject": "Pilot (unused)",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "'Pilot (unused)' is defined but no include target uses it. It protects nobody.",
+      "evidence": [],
+      "action": "Target it at the intended group or delete it."
+    },
+    {
+      "key": "R10|tenant|tenant|Many passkey profiles",
+      "rule": "R10",
+      "ruleName": "Policy hygiene",
+      "severity": "low",
+      "title": "Many passkey profiles",
+      "subject": "tenant",
+      "subjectType": "tenant",
+      "userId": "",
+      "cohort": "",
+      "detail": "4 profiles (soft threshold 3). More profiles mean more overlap to reason about.",
+      "evidence": [
+        "Workforce - Authenticator only, Admins - security keys (attested), Contractors, Pilot (unused)"
+      ],
+      "action": "Consolidate to an admin profile and a workforce profile where possible."
+    },
+    {
+      "key": "R10|profile|Workforce - Authenticator only|Authenticator AAGUIDs in allow list",
+      "rule": "R10",
+      "ruleName": "Policy hygiene",
+      "severity": "info",
+      "title": "Authenticator AAGUIDs in allow list",
+      "subject": "Workforce - Authenticator only",
+      "subjectType": "profile",
+      "userId": "",
+      "cohort": "",
+      "detail": "'Workforce - Authenticator only' allows Microsoft Authenticator AAGUIDs, which Entra adds automatically when Authenticator passkeys are enabled.",
+      "evidence": [
+        "AAGUIDs: 90a3ccdf-635c-4729-a248-9b709135078f, de1e552d-db1d-4423-a619-566b625cdc84"
+      ],
+      "action": "Confirm Authenticator passkeys are intended for the users of this profile."
+    }
+  ],
+  "users": [
+    {
+      "id": "u-gina",
+      "upn": "gina@fabrikam.example",
+      "displayName": "Gina Exchange",
+      "category": "member",
+      "privileged": true,
+      "roles": "Exchange Administrator",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Contractors",
+        "Admins - security keys (attested)"
+      ],
+      "permittedBy": [
+        "Contractors"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "YubiKey 5 NFC",
+          "aaguid": "ee882879-721c-4913-9775-3dfcce97072a",
+          "type": "deviceBound",
+          "attested": true
+        }
+      ],
+      "findings": [
+        "R1"
+      ]
+    },
+    {
+      "id": "u-kim",
+      "upn": "kim@vendor.example",
+      "displayName": "Kim Contractor",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 5,
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "syncedAllowed": true,
+      "profiles": [
+        "Contractors"
+      ],
+      "permittedBy": [
+        "Contractors"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [],
+      "findings": []
+    },
+    {
+      "id": "u-jack",
+      "upn": "jack@fabrikam.example",
+      "displayName": "Jack Global",
+      "category": "member",
+      "privileged": true,
+      "roles": "Global Administrator",
+      "status": "allowed",
+      "rank": 1,
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "syncedAllowed": false,
+      "profiles": [
+        "Admins - security keys (attested)"
+      ],
+      "permittedBy": [
+        "Admins - security keys (attested)"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "YubiKey 5 NFC (FW 5.7)",
+          "aaguid": "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa",
+          "type": "deviceBound",
+          "attested": true
+        }
+      ],
+      "findings": [
+        "R5"
+      ]
+    },
+    {
+      "id": "u-hank",
+      "upn": "hank@fabrikam.example",
+      "displayName": "Hank Ops",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 1,
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "syncedAllowed": false,
+      "profiles": [
+        "Workforce - Authenticator only"
+      ],
+      "permittedBy": [
+        "Workforce - Authenticator only"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "YubiKey 5",
+          "aaguid": "cb69481e-8ff7-4039-93ec-0a2729a154a8",
+          "type": "deviceBound",
+          "attested": true
+        }
+      ],
+      "findings": [
+        "R5"
+      ]
+    },
+    {
+      "id": "u-ivy",
+      "upn": "ivy@fabrikam.example",
+      "displayName": "Ivy HR",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 1,
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "syncedAllowed": false,
+      "profiles": [
+        "Workforce - Authenticator only"
+      ],
+      "permittedBy": [
+        "Workforce - Authenticator only"
+      ],
+      "phoneOnly": false,
+      "smsCohort": "",
+      "keys": [
+        {
+          "name": "Authenticator iOS",
+          "aaguid": "90a3ccdf-635c-4729-a248-9b709135078f",
+          "type": "deviceBound",
+          "attested": true
+        }
+      ],
+      "findings": []
+    },
+    {
+      "id": "u-liam",
+      "upn": "liam@fabrikam.example",
+      "displayName": "Liam Warehouse",
+      "category": "member",
+      "privileged": false,
+      "roles": "",
+      "status": "allowed",
+      "rank": 1,
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "syncedAllowed": false,
+      "profiles": [
+        "Workforce - Authenticator only"
+      ],
+      "permittedBy": [
+        "Workforce - Authenticator only"
+      ],
+      "phoneOnly": true,
+      "smsCohort": "1 Feb 2027",
+      "keys": [],
+      "findings": [
+        "R3"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "pp-staff",
+      "name": "Workforce - Authenticator only",
+      "passkeyTypes": [
+        "deviceBound"
+      ],
+      "attestationEnforced": true,
+      "keyRestriction": "allow (2)",
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "usersScoped": 3,
+      "legacy": false
+    },
+    {
+      "id": "pp-admin",
+      "name": "Admins - security keys (attested)",
+      "passkeyTypes": [
+        "deviceBound",
+        "synced"
+      ],
+      "attestationEnforced": true,
+      "keyRestriction": "allow (1)",
+      "weakestCredential": "Device-bound, attested, allow-listed authenticators only",
+      "usersScoped": 2,
+      "legacy": false
+    },
+    {
+      "id": "pp-contractors",
+      "name": "Contractors",
+      "passkeyTypes": [
+        "deviceBound",
+        "synced"
+      ],
+      "attestationEnforced": false,
+      "keyRestriction": "none",
+      "weakestCredential": "Synced passkey, any provider, unattested",
+      "usersScoped": 2,
+      "legacy": false
+    },
+    {
+      "id": "pp-pilot",
+      "name": "Pilot (unused)",
+      "passkeyTypes": [
+        "deviceBound"
+      ],
+      "attestationEnforced": false,
+      "keyRestriction": "none",
+      "weakestCredential": "Device-bound, unattested (authenticator model not verified)",
+      "usersScoped": 0,
+      "legacy": false
+    }
+  ],
+  "rules": {
+    "R1": {
+      "name": "Overlap weakening",
+      "definition": "A privileged user can register a weaker passkey than the admin profile intends, because at least one scoped profile allows it."
+    },
+    "R2": {
+      "name": "Weak key already held",
+      "definition": "A privileged user already holds a synced or unattested passkey."
+    },
+    "R3": {
+      "name": "Deadline cohort",
+      "definition": "User's only MFA is SMS or voice. They hit a blocking passkey registration prompt on 1 Feb 2027 (Global Admins and external users: 1 Jul 2027)."
+    },
+    "R4": {
+      "name": "Auto-enabled admin",
+      "definition": "A privileged SMS/voice user sits in an 'all passkey types' profile, the shape Microsoft auto-enabled on 1 Sep 2026."
+    },
+    "R5": {
+      "name": "AAGUID trap",
+      "definition": "A user holds a passkey that none of their scoped profiles accepts. Microsoft blocks keys whose AAGUID is not permitted, so they lose sign-in with it."
+    },
+    "R6": {
+      "name": "Attestation illusion",
+      "definition": "A profile is relied on as 'attested' but synced passkeys cannot be attested, or its users can bypass it through another profile."
+    },
+    "R7": {
+      "name": "No phishing-resistant method",
+      "definition": "A privileged user has no phishing-resistant method registered."
+    },
+    "R8": {
+      "name": "Campaign gap",
+      "definition": "The registration campaign will not reliably move the SMS/voice cohort to passkeys before the deadline."
+    },
+    "R9": {
+      "name": "Excluded but privileged",
+      "definition": "A privileged user is excluded from the passkey policy. Exclusion beats every inclusion, so they cannot use passkeys at all."
+    },
+    "R10": {
+      "name": "Policy hygiene",
+      "definition": "Profile count, list size, unused or dangling references, and auto-added Authenticator AAGUIDs."
+    }
+  },
+  "notes": [
+    "Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope."
+  ]
+}

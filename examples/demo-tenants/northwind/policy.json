@@ -1,0 +1,49 @@
+{
+  "tenantDisplayName": "Northwind (synthetic demo)",
+  "registrationEnforcement": {
+    "authenticationMethodsRegistrationCampaign": {
+      "state": "enabled",
+      "snoozeDurationInDays": 3,
+      "enforceRegistrationAfterAllowedSnoozes": true,
+      "includeTargets": [
+        {
+          "id": "g-pilot",
+          "targetType": "group",
+          "targetedAuthenticationMethod": "microsoftAuthenticator"
+        }
+      ],
+      "excludeTargets": []
+    }
+  },
+  "authenticationMethodConfigurations": [
+    {
+      "@odata.type": "#microsoft.graph.fido2AuthenticationMethodConfiguration",
+      "id": "Fido2",
+      "state": "enabled",
+      "isAttestationEnforced": false,
+      "keyRestrictions": {
+        "isEnforced": false,
+        "enforcementType": "block",
+        "aaGuids": []
+      },
+      "includeTargets": [
+        {
+          "id": "g-pilot",
+          "targetType": "group",
+          "isRegistrationRequired": false
+        }
+      ],
+      "excludeTargets": []
+    },
+    {
+      "@odata.type": "#microsoft.graph.smsAuthenticationMethodConfiguration",
+      "id": "Sms",
+      "state": "enabled"
+    },
+    {
+      "@odata.type": "#microsoft.graph.voiceAuthenticationMethodConfiguration",
+      "id": "Voice",
+      "state": "enabled"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "value": [
+    {
+      "id": "g-admins",
+      "displayName": "Privileged Admins",
+      "members": [
+        "u-alice",
+        "u-bob",
+        "g-tier0"
+      ]
+    },
+    {
+      "id": "g-tier0",
+      "displayName": "Tier 0 Role Holders (role-assignable)",
+      "members": [
+        "u-carol"
+      ]
+    },
+    {
+      "id": "g-breakglass",
+      "displayName": "Break-glass accounts",
+      "members": [
+        "u-bg1"
+      ]
+    }
+  ]
+}

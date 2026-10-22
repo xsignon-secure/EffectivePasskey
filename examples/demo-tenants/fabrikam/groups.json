@@ -1,0 +1,36 @@
+{
+  "value": [
+    {
+      "id": "g-staff",
+      "displayName": "All Staff",
+      "members": [
+        "u-hank",
+        "u-ivy",
+        "u-liam"
+      ]
+    },
+    {
+      "id": "g-admins",
+      "displayName": "IT Admins",
+      "members": [
+        "u-gina",
+        "u-jack"
+      ]
+    },
+    {
+      "id": "g-contractors",
+      "displayName": "Contractors",
+      "members": [
+        "u-kim",
+        "g-vendors-eu"
+      ]
+    },
+    {
+      "id": "g-vendors-eu",
+      "displayName": "Vendors EU",
+      "members": [
+        "u-gina"
+      ]
+    }
+  ]
+}

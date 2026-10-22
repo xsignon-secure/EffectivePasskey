@@ -1,0 +1,53 @@
+{
+  "roleAssignments": [
+    {
+      "principalId": "u-gina",
+      "roleTemplateId": "29232cdf-9323-42fd-ade2-1d097af3e4de",
+      "assignmentType": "active"
+    },
+    {
+      "principalId": "u-jack",
+      "roleTemplateId": "62e90394-69f5-4237-9190-012177145e10",
+      "assignmentType": "active"
+    }
+  ],
+  "fido2Methods": {
+    "u-gina": [
+      {
+        "id": "k1",
+        "displayName": "YubiKey 5 NFC",
+        "aaGuid": "ee882879-721c-4913-9775-3dfcce97072a",
+        "attestationLevel": "attested",
+        "createdDateTime": "2026-05-12T09:00:00Z"
+      }
+    ],
+    "u-hank": [
+      {
+        "id": "k2",
+        "displayName": "YubiKey 5",
+        "aaGuid": "cb69481e-8ff7-4039-93ec-0a2729a154a8",
+        "attestationLevel": "attested",
+        "createdDateTime": "2026-05-12T09:00:00Z"
+      }
+    ],
+    "u-ivy": [
+      {
+        "id": "k3",
+        "displayName": "Authenticator iOS",
+        "aaGuid": "90a3ccdf-635c-4729-a248-9b709135078f",
+        "attestationLevel": "attested",
+        "createdDateTime": "2026-05-12T09:00:00Z"
+      }
+    ],
+    "u-jack": [
+      {
+        "id": "k4",
+        "displayName": "YubiKey 5 NFC (FW 5.7)",
+        "aaGuid": "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa",
+        "attestationLevel": "attested",
+        "createdDateTime": "2026-05-12T09:00:00Z"
+      }
+    ],
+    "u-liam": []
+  }
+}
