@@ -53,8 +53,8 @@ only thing that beats inclusion.
    first), and offer `analyze <plan-dir>/proposed-export` as proof. Present changes as steps for a
    human in the Entra portal. Never apply changes to a tenant and never write to Graph.
 
-   For an MSP with many clients: `effective-passkey fleet <parent-dir> -o <out> --remediate`, with
-   `--brand-name/--brand-color/--brand-logo` for white-label reports and `--previous <last-out>` for
+   For several tenants at once: `effective-passkey fleet <parent-dir> -o <out> --remediate`, with
+   `--brand-name/--brand-color/--brand-logo` to brand the reports and `--previous <last-out>` for
    month-over-month drift.
 
 7. **Drift.** For a later run, `effective-passkey diff old/result.json new/result.json` lists new

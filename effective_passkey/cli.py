@@ -187,7 +187,7 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--aaguid-map", help="JSON file extending the known AAGUID → (name, synced|deviceBound) map")
 
     def branding(p):
-        g = p.add_argument_group("white-label")
+        g = p.add_argument_group("report branding")
         g.add_argument("--brand-name", help="your firm's name, shown on the report header")
         g.add_argument("--brand-color", help="accent colour, e.g. #0a5cff")
         g.add_argument("--brand-logo", help="logo file (png, jpg, svg, gif; max 512 KB), embedded in the report")

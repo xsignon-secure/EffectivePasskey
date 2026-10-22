@@ -10,7 +10,26 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = []
-keywords = ["entra", "azure-ad", "passkey", "fido2", "audit", "identity"]
+keywords = ["entra", "entra-id", "azure-ad", "passkey", "fido2", "webauthn", "conditional-access", "mfa", "audit", "security", "identity"]
+authors = [{name = "XSignOn"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration :: Authentication/Directory",
+]
+
+[project.urls]
+Homepage = "https://github.com/xsignon-secure/EffectivePasskey"
+Documentation = "https://github.com/xsignon-secure/EffectivePasskey#readme"
+Issues = "https://github.com/xsignon-secure/EffectivePasskey/issues"
+Changelog = "https://github.com/xsignon-secure/EffectivePasskey/blob/main/CHANGELOG.md"
 
 [project.scripts]
 effective-passkey = "effective_passkey.cli:main"

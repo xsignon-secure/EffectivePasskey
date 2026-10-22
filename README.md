@@ -15,6 +15,10 @@ It runs entirely on your machine, needs only Python 3.10+ (no packages to instal
 and never changes anything. It also ships as an agent skill for Claude Code, Codex, Cursor and other tools that read
 `SKILL.md`.
 
+**Free and open source, for everyone.** EffectivePasskey is released under the [MIT licence](LICENSE). Every feature
+in this README is free, including multi-tenant runs and report branding. There is no paid edition, no licence key, no
+sign-up, no telemetry and no network calls from the analyzer. Contributions and issues are welcome.
+
 ---
 
 ## Why you need it
@@ -161,27 +165,28 @@ effective-passkey diff ./october/result.json ./november/result.json
 effective-passkey diff old.json new.json --fail-on-new   # exit 1 if anything new appeared
 ```
 
-### 5. Many tenants at once, for MSPs and consultants (`fleet`)
+### 5. Many tenants at once (`fleet`)
 
-Put one export folder per client under a parent folder and run one command. You get a dashboard of every client,
-worst first, with grade, admins exposed to synced passkeys, critical findings, both SMS cohorts, change since last
-run and a link to each client's report and plan.
+For anyone who looks after several tenants (IT teams with many directories, consultants, volunteers helping
+non-profits). Put one export folder per tenant under a parent folder and run one command. You get a dashboard of every
+tenant, worst first, with grade, admins exposed to synced passkeys, critical findings, both SMS cohorts, change since
+last run and a link to each tenant's report and plan.
 
 ```bash
 effective-passkey fleet ./clients -o ./fleet-2026-11 --remediate --previous ./fleet-2026-10
 ```
 
-Output: `index.html` (the dashboard), `fleet.csv`, `fleet.json` and one report folder per client.
-`--fail-on-grade D` makes a scheduled pipeline fail when any client is at D or worse.
+Output: `index.html` (the dashboard), `fleet.csv`, `fleet.json` and one report folder per tenant.
+`--fail-on-grade D` makes a scheduled pipeline fail when any tenant is at D or worse.
 
-### 6. White-label reports
+### 6. Report branding
 
-`analyze`, `remediate` and `fleet` can carry your brand: `--brand-name`, `--brand-color`, `--brand-logo` (embedded,
+`analyze`, `remediate` and `fleet` can carry your team's name and colours: `--brand-name`, `--brand-color`, `--brand-logo` (embedded,
 so the report stays a single file) and `--prepared-for "Client name"`.
 
 ```bash
 effective-passkey analyze ./client-a -o ./client-a-report \
-  --brand-name "Your MSP" --brand-color "#0a5cff" --brand-logo logo.svg --prepared-for "Client A"
+  --brand-name "Your team" --brand-color "#0a5cff" --brand-logo logo.svg --prepared-for "Client A"
 ```
 
 ### 7. Check an export (`validate`)
@@ -300,7 +305,7 @@ findings, D with one or two, C if the worst is high, B if the worst is medium, a
 | `validate <dir>` | Check that an export loads and summarize it |
 
 Common options: `--as-of YYYY-MM-DD` (count deadlines from a fixed date), `--tenant-name`, `--aaguid-map map.json`
-(teach it about authenticators it doesn't know), `-q` (quiet), and the white-label options above.
+(teach it about authenticators it doesn't know), `-q` (quiet), and the branding options above.
 
 Exit codes: `0` ok, `1` findings at or above `--fail-on` (or new findings with `diff --fail-on-new`, or a tenant at or
 below `--fail-on-grade`), `2` input error.
@@ -344,5 +349,9 @@ make site       # build the GitHub Pages site into ./site
 CI runs the tests on Python 3.10, 3.12 and 3.13, checks the example reports are up to date, builds the site, installs
 the package, and runs the collector against the mocked Graph.
 
-MIT licensed. Use [Maester](https://maester.dev) for tenant-wide baselines and EffectivePasskey for effective passkey
-and admin sign-in policy; they work well together.
+## License
+
+MIT. Free to use, change and share, including at work. See [LICENSE](LICENSE).
+
+Use [Maester](https://maester.dev) for tenant-wide baselines and EffectivePasskey for effective passkey and admin sign-in
+policy; they work well together.

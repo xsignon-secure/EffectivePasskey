@@ -1,7 +1,7 @@
-"""The ten audit rules (R1 to R10).
+"""The core audit rules (R1 to R10; R11 to R16 are in deep.py).
 
 Every finding carries an evidence chain: the ordered facts that lead from the
-exports to the conclusion, so a consultant can defend it in front of a client.
+exports to the conclusion, so anyone reading a report can check how it was reached.
 """
 
 from __future__ import annotations
