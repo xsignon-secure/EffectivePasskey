@@ -1,11 +1,13 @@
 name: Release
-# Pushing a tag like v0.3.0 builds the package and publishes a free GitHub Release
-# with the wheel, sdist and a zip of the agent skill.
+# Publishes a free GitHub Release with the wheel, sdist and a zip of the agent skill.
+# Start it either by pushing a tag like v0.3.0, or from the Actions tab with
+# "Run workflow" on main, which tags the current commit with the package version.
 # PyPI (also free) is opt-in: add a trusted publisher for this repository and
 # workflow on pypi.org, then set the repository variable PYPI_ENABLED to "true".
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -16,10 +18,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Tag matches package version
+      - name: Release tag
+        id: tag
         run: |
           v=$(python -c "import effective_passkey; print(effective_passkey.__version__)")
-          test "v$v" = "${GITHUB_REF_NAME}"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME does not match version $v"; exit 1; }
+          fi
+          echo "name=v$v" >> "$GITHUB_OUTPUT"
       - run: python -m unittest discover -s tests
       - run: python -m pip install build && python -m build
       - name: Skill bundle
@@ -28,6 +34,8 @@ jobs:
         with:
           name: dist
           path: dist/
+    outputs:
+      tag: ${{ steps.tag.outputs.name }}
   github-release:
     needs: build
     runs-on: ubuntu-latest
@@ -39,12 +47,17 @@ jobs:
         with:
           name: dist
           path: dist
-      - name: Create release
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
         run: |
-          awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## "v"$" {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* --title "EffectivePasskey $GITHUB_REF_NAME" --notes-file notes.md
+          awk -v v="${TAG#v}" '$0 ~ "^## "v"$" {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "EffectivePasskey $TAG" --notes-file notes.md
+          fi
   pypi:
     needs: build
     if: ${{ vars.PYPI_ENABLED == 'true' }}
