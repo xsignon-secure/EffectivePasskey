@@ -1,0 +1,130 @@
+{
+  "tenant": "Contoso (synthetic demo)",
+  "asOf": "2026-10-22",
+  "changes": [
+    {
+      "id": "C1",
+      "kind": "policy",
+      "title": "Retarget profile(s) 'Default' from 'All users' to a group without admins",
+      "rationale": "Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.",
+      "fixes": [
+        "R1",
+        "R4",
+        "R6"
+      ],
+      "before": {
+        "target": "All users",
+        "targetId": "all_users",
+        "privilegedUsersCovered": [
+          "alice@contoso.example",
+          "bob@contoso.example",
+          "carol@contoso.example"
+        ]
+      },
+      "after": {
+        "target": "All users (excluding privileged users)",
+        "targetId": "ep-proposed-all-users-excluding-privileged-users",
+        "members": 3
+      },
+      "notes": [
+        "The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it."
+      ]
+    },
+    {
+      "id": "C2",
+      "kind": "campaign",
+      "title": "Point the registration campaign at passkeys for all users, with limited snoozes",
+      "rationale": "3 SMS/voice-only user(s) need a nudge before their deadline.",
+      "fixes": [
+        "R8"
+      ],
+      "before": {
+        "state": "enabled",
+        "snoozeDurationInDays": 1,
+        "enforceRegistrationAfterAllowedSnoozes": false,
+        "targets": [
+          "All users"
+        ],
+        "targetedAuthenticationMethod": "passkey"
+      },
+      "after": {
+        "state": "enabled",
+        "snoozeDurationInDays": 1,
+        "enforceRegistrationAfterAllowedSnoozes": true,
+        "targets": [
+          "All users"
+        ],
+        "targetedAuthenticationMethod": "passkey"
+      },
+      "notes": [
+        "Check the targetedAuthenticationMethod value your tenant's Graph version accepts."
+      ]
+    }
+  ],
+  "userTasks": [
+    {
+      "user": "carol@contoso.example",
+      "task": "Register a device-bound key, then delete the weak passkey",
+      "rule": "R2",
+      "due": "now"
+    },
+    {
+      "user": "bob@contoso.example",
+      "task": "Issue and register a device-bound passkey",
+      "rule": "R7",
+      "due": "now"
+    },
+    {
+      "user": "bob@contoso.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    },
+    {
+      "user": "dave@contoso.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    },
+    {
+      "user": "frank_partner.example#EXT#@contoso.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-07-01"
+    }
+  ],
+  "outcome": {
+    "resolved": [
+      "[critical] R1 Privileged user can register a synced passkey: alice@contoso.example",
+      "[critical] R1 Privileged user can register a synced passkey: bob@contoso.example",
+      "[critical] R1 Privileged user can register a synced passkey: carol@contoso.example",
+      "[high] R4 Privileged SMS/voice user in an 'all passkey types' profile: bob@contoso.example",
+      "[medium] R6 Attested profile is bypassed by an overlapping profile: Admins - device-bound",
+      "[medium] R8 Campaign allows unlimited snoozes: tenant"
+    ],
+    "remaining": [
+      "[critical] R2 Privileged user holds a synced passkey: carol@contoso.example",
+      "[critical] R7 Privileged user has no phishing-resistant method: bob@contoso.example",
+      "[high] R3 SMS/voice-only user: bob@contoso.example",
+      "[high] R3 SMS/voice-only user: dave@contoso.example",
+      "[high] R3 SMS/voice-only user: frank_partner.example#EXT#@contoso.example",
+      "[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example"
+    ],
+    "introduced": [
+      "[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example"
+    ],
+    "beforeBySeverity": {
+      "critical": 5,
+      "high": 4,
+      "medium": 3
+    },
+    "afterBySeverity": {
+      "critical": 2,
+      "high": 4,
+      "medium": 1
+    },
+    "privilegedSyncedBefore": 3,
+    "privilegedSyncedAfter": 0
+  },
+  "disclaimer": "Proposed changes for human review. EffectivePasskey never applies changes to a tenant."
+}

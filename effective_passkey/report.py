@@ -22,6 +22,15 @@ SCALING_NOTE = (
 )
 
 
+def build_deadlines(as_of) -> dict:
+    return {
+        "main": SMS_RETIREMENT_MAIN.isoformat(),
+        "late": SMS_RETIREMENT_LATE.isoformat(),
+        "daysToMain": (SMS_RETIREMENT_MAIN - as_of).days,
+        "daysToLate": (SMS_RETIREMENT_LATE - as_of).days,
+    }
+
+
 def build_result(auditor: Auditor) -> dict:
     t = auditor.tenant
     findings = [f.to_dict() for f in auditor.findings]
@@ -71,12 +80,7 @@ def build_result(auditor: Auditor) -> dict:
         "tool": {"name": TOOL_NAME, "version": __version__},
         "tenant": t.name,
         "asOf": auditor.as_of.isoformat(),
-        "deadlines": {
-            "main": SMS_RETIREMENT_MAIN.isoformat(),
-            "late": SMS_RETIREMENT_LATE.isoformat(),
-            "daysToMain": (SMS_RETIREMENT_MAIN - auditor.as_of).days,
-            "daysToLate": (SMS_RETIREMENT_LATE - auditor.as_of).days,
-        },
+        "deadlines": build_deadlines(auditor.as_of),
         "summary": {
             "users": len(users),
             "privileged": len(priv),

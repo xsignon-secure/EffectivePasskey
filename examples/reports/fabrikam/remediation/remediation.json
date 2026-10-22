@@ -1,0 +1,198 @@
+{
+  "tenant": "Fabrikam (synthetic demo)",
+  "asOf": "2026-10-22",
+  "changes": [
+    {
+      "id": "C1",
+      "kind": "policy",
+      "title": "Remove 'synced' from attested profile 'Admins - security keys (attested)'",
+      "rationale": "Synced passkeys cannot be attested, so listing them in an attested profile is misleading.",
+      "fixes": [
+        "R6"
+      ],
+      "before": {
+        "displayName": "Admins - security keys (attested)",
+        "passkeyTypes": [
+          "deviceBound",
+          "synced"
+        ],
+        "attestation": "required",
+        "keyRestriction": "allow: ['ee882879-721c-4913-9775-3dfcce97072a']",
+        "weakestCredential": "Device-bound, attested, allow-listed authenticators only"
+      },
+      "after": {
+        "displayName": "Admins - security keys (attested)",
+        "passkeyTypes": [
+          "deviceBound"
+        ],
+        "attestation": "required",
+        "keyRestriction": "allow: ['ee882879-721c-4913-9775-3dfcce97072a']",
+        "weakestCredential": "Device-bound, attested, allow-listed authenticators only"
+      },
+      "notes": []
+    },
+    {
+      "id": "C2",
+      "kind": "policy",
+      "title": "Retarget profile(s) 'Contractors' from 'Contractors' to a group without admins",
+      "rationale": "Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.",
+      "fixes": [
+        "R1",
+        "R4",
+        "R6"
+      ],
+      "before": {
+        "target": "Contractors",
+        "targetId": "g-contractors",
+        "privilegedUsersCovered": [
+          "gina@fabrikam.example"
+        ]
+      },
+      "after": {
+        "target": "Contractors (excluding privileged users)",
+        "targetId": "ep-proposed-contractors-excluding-privileged-users",
+        "members": 1
+      },
+      "notes": [
+        "The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it."
+      ]
+    },
+    {
+      "id": "C3",
+      "kind": "policy",
+      "title": "Scope privileged users to 'Workforce - Authenticator only'",
+      "rationale": "Every admin should be scoped to the strict profile, and only to it.",
+      "fixes": [
+        "R1"
+      ],
+      "before": null,
+      "after": {
+        "target": "Privileged users (passkey admin profile)",
+        "profile": "Workforce - Authenticator only",
+        "users": [
+          "gina@fabrikam.example",
+          "jack@fabrikam.example"
+        ]
+      },
+      "notes": [
+        "Prefer targeting your existing role-assignable admin group instead of this snapshot group."
+      ]
+    },
+    {
+      "id": "C4",
+      "kind": "policy",
+      "title": "Add 1 AAGUID(s) to the allow list of 'Admins - security keys (attested)'",
+      "rationale": "Users hold keys this profile would reject, so they would lose sign-in with them.",
+      "fixes": [
+        "R5"
+      ],
+      "before": {
+        "aaGuids": [
+          "ee882879-721c-4913-9775-3dfcce97072a"
+        ]
+      },
+      "after": {
+        "aaGuids": [
+          "a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa",
+          "ee882879-721c-4913-9775-3dfcce97072a"
+        ]
+      },
+      "notes": [
+        "Only add AAGUIDs of authenticator models you approve; otherwise have the users re-register."
+      ]
+    },
+    {
+      "id": "C5",
+      "kind": "policy",
+      "title": "Add 1 AAGUID(s) to the allow list of 'Workforce - Authenticator only'",
+      "rationale": "Users hold keys this profile would reject, so they would lose sign-in with them.",
+      "fixes": [
+        "R5"
+      ],
+      "before": {
+        "aaGuids": [
+          "90a3ccdf-635c-4729-a248-9b709135078f",
+          "de1e552d-db1d-4423-a619-566b625cdc84"
+        ]
+      },
+      "after": {
+        "aaGuids": [
+          "90a3ccdf-635c-4729-a248-9b709135078f",
+          "cb69481e-8ff7-4039-93ec-0a2729a154a8",
+          "de1e552d-db1d-4423-a619-566b625cdc84"
+        ]
+      },
+      "notes": [
+        "Only add AAGUIDs of authenticator models you approve; otherwise have the users re-register."
+      ]
+    },
+    {
+      "id": "C6",
+      "kind": "campaign",
+      "title": "Point the registration campaign at passkeys for all users, with limited snoozes",
+      "rationale": "1 SMS/voice-only user(s) need a nudge before their deadline.",
+      "fixes": [
+        "R8"
+      ],
+      "before": {
+        "state": "disabled",
+        "snoozeDurationInDays": null,
+        "enforceRegistrationAfterAllowedSnoozes": null,
+        "targets": [],
+        "targetedAuthenticationMethod": null
+      },
+      "after": {
+        "state": "enabled",
+        "snoozeDurationInDays": 1,
+        "enforceRegistrationAfterAllowedSnoozes": true,
+        "targets": [
+          "All users"
+        ],
+        "targetedAuthenticationMethod": "passkey"
+      },
+      "notes": [
+        "Check the targetedAuthenticationMethod value your tenant's Graph version accepts."
+      ]
+    }
+  ],
+  "userTasks": [
+    {
+      "user": "liam@fabrikam.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    }
+  ],
+  "outcome": {
+    "resolved": [
+      "[critical] R1 Privileged user can register a synced passkey: gina@fabrikam.example",
+      "[high] R5 Registered passkey not accepted by any scoped profile: hank@fabrikam.example",
+      "[high] R5 Registered passkey not accepted by any scoped profile: jack@fabrikam.example",
+      "[medium] R6 Attested profile is bypassed by an overlapping profile: Admins - security keys (attested)",
+      "[medium] R6 Attested profile lists synced passkeys: Admins - security keys (attested)",
+      "[medium] R8 Registration campaign is off: tenant"
+    ],
+    "remaining": [
+      "[high] R3 SMS/voice-only user: liam@fabrikam.example",
+      "[info] R10 Authenticator AAGUIDs in allow list: Workforce - Authenticator only",
+      "[low] R10 Many passkey profiles: tenant",
+      "[low] R10 Profile not targeted by any group: Pilot (unused)"
+    ],
+    "introduced": [],
+    "beforeBySeverity": {
+      "critical": 1,
+      "high": 3,
+      "medium": 3,
+      "low": 2,
+      "info": 1
+    },
+    "afterBySeverity": {
+      "high": 1,
+      "low": 2,
+      "info": 1
+    },
+    "privilegedSyncedBefore": 1,
+    "privilegedSyncedAfter": 0
+  },
+  "disclaimer": "Proposed changes for human review. EffectivePasskey never applies changes to a tenant."
+}

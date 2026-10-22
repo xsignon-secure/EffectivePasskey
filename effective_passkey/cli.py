@@ -16,7 +16,7 @@ import os
 import sys
 from datetime import date
 
-from . import __version__, html_report, report
+from . import __version__, fleet, html_report, remediation, report
 from .constants import SEVERITY_ORDER
 from .diff import diff, load, to_text
 from .model import InputError, load_tenant
@@ -42,19 +42,33 @@ def _audit(args) -> Auditor:
     return auditor
 
 
-def cmd_analyze(args) -> int:
-    auditor = _audit(args)
-    result = report.build_result(auditor)
-    os.makedirs(args.output, exist_ok=True)
+def _brand(args) -> html_report.Brand:
+    try:
+        return html_report.Brand.build(name=args.brand_name, color=args.brand_color, logo=args.brand_logo,
+                                       prepared_for=args.prepared_for)
+    except (ValueError, OSError) as exc:
+        raise InputError(str(exc)) from None
+
+
+def write_reports(result: dict, out_dir: str, formats: str, brand: html_report.Brand) -> list[str]:
+    os.makedirs(out_dir, exist_ok=True)
     written = []
-    for fmt in [f.strip() for f in args.format.split(",") if f.strip()]:
+    for fmt in [f.strip() for f in formats.split(",") if f.strip()]:
         if fmt not in FORMATS:
             raise InputError(f"unknown format '{fmt}' (choose from {', '.join(FORMATS)})")
         name, fn = FORMATS[fmt]
-        path = os.path.join(args.output, name)
+        path = os.path.join(out_dir, name)
         with open(path, "w", encoding="utf-8", newline="") as fh:
-            fh.write(fn(result))
+            fh.write(html_report.render(result, brand) if fmt == "html" else fn(result))
         written.append(path)
+    return written
+
+
+def cmd_analyze(args) -> int:
+    brand = _brand(args)
+    auditor = _audit(args)
+    result = report.build_result(auditor)
+    written = write_reports(result, args.output, args.format, brand)
 
     s = result["summary"]
     sev = s["findingsBySeverity"]
@@ -102,6 +116,41 @@ def cmd_explain(args) -> int:
     return 0
 
 
+def cmd_remediate(args) -> int:
+    brand = _brand(args)
+    plan = remediation.build_plan(_audit(args))
+    written = remediation.write_plan(plan, args.output, brand)
+    o = plan.outcome()
+    if not args.quiet:
+        print(f"{plan.tenant.name}: {len(plan.changes)} proposed change(s), {len(plan.user_tasks)} user task(s)")
+        print(f"simulated: {len(o['resolved'])} finding(s) resolved, {len(o['remaining'])} remaining, "
+              f"{len(o['introduced'])} introduced; privileged users able to register synced passkeys "
+              f"{o['privilegedSyncedBefore']} → {o['privilegedSyncedAfter']}")
+        for p in written:
+            print(f"wrote {p}")
+    return 0
+
+
+def cmd_fleet(args) -> int:
+    brand = _brand(args)
+    f = fleet.run_fleet(args.input, args.output, _as_of(args.as_of), brand=brand, previous=args.previous,
+                        with_remediation=args.remediate, aaguid_map=args.aaguid_map)
+    t = f["totals"]
+    if not args.quiet:
+        print(f"{t['tenants']} tenant(s): {t['tenantsFailing']} graded D/F, {t['critical']} critical findings, "
+              f"{t['privilegedSyncedAllowed']} admins can register synced passkeys")
+        for r in f["tenants"]:
+            print(f"  {r['grade']}  {r['tenant']}  ({r['critical']} critical)")
+        for err in f["errors"]:
+            print(f"  !  {err['tenant']}: {err['error']}")
+        print(f"wrote {os.path.join(args.output, 'index.html')}")
+    if args.fail_on_grade:
+        worst = "ABCDF"
+        if any(worst.index(r["grade"]) >= worst.index(args.fail_on_grade) for r in f["tenants"]):
+            return 1
+    return 1 if f["errors"] and args.strict else 0
+
+
 def cmd_diff(args) -> int:
     d = diff(load(args.old), load(args.new))
     print(json.dumps(d, indent=2) if args.json else to_text(d))
@@ -132,18 +181,46 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--tenant-name", help="name shown on the report")
         p.add_argument("--aaguid-map", help="JSON file extending the known AAGUID → (name, synced|deviceBound) map")
 
+    def branding(p):
+        g = p.add_argument_group("white-label")
+        g.add_argument("--brand-name", help="your firm's name, shown on the report header")
+        g.add_argument("--brand-color", help="accent colour, e.g. #0a5cff")
+        g.add_argument("--brand-logo", help="logo file (png, jpg, svg, gif; max 512 KB), embedded in the report")
+        g.add_argument("--prepared-for", help="client name shown on the report header")
+
     a = sub.add_parser("analyze", help="audit an export and write reports")
     common(a)
     a.add_argument("-o", "--output", default="effective-passkey-report", help="output directory")
     a.add_argument("--format", default="html,md,csv,json", help="comma-separated: html,md,csv,json")
     a.add_argument("--fail-on", choices=list(SEVERITY_ORDER), help="exit 1 if any finding is at or above this severity")
     a.add_argument("-q", "--quiet", action="store_true")
+    branding(a)
     a.set_defaults(fn=cmd_analyze)
 
     x = sub.add_parser("explain", help="show one user's effective policy and how it was derived")
     common(x)
     x.add_argument("user", help="UPN, object id or display name")
     x.set_defaults(fn=cmd_explain)
+
+    r = sub.add_parser("remediate", help="propose policy changes, simulate them, and write a plan (never applied)")
+    common(r)
+    r.add_argument("-o", "--output", default="effective-passkey-remediation", help="output directory")
+    r.add_argument("-q", "--quiet", action="store_true")
+    branding(r)
+    r.set_defaults(fn=cmd_remediate)
+
+    fl = sub.add_parser("fleet", help="audit every tenant export under a folder and build one dashboard")
+    fl.add_argument("input", help="folder with one sub-folder of exports per tenant")
+    fl.add_argument("-o", "--output", default="effective-passkey-fleet", help="output directory")
+    fl.add_argument("--as-of", help="date to compute deadlines from (YYYY-MM-DD, default today)")
+    fl.add_argument("--aaguid-map")
+    fl.add_argument("--previous", help="a previous fleet output directory, to show drift per tenant")
+    fl.add_argument("--remediate", action="store_true", help="also write a remediation plan per tenant")
+    fl.add_argument("--fail-on-grade", choices=list("BCDF"), help="exit 1 if any tenant grades this or worse")
+    fl.add_argument("--strict", action="store_true", help="exit 1 if any tenant export fails to load")
+    fl.add_argument("-q", "--quiet", action="store_true")
+    branding(fl)
+    fl.set_defaults(fn=cmd_fleet)
 
     d = sub.add_parser("diff", help="compare two result.json files")
     d.add_argument("old")

@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "tenant": "Northwind (synthetic demo)",
   "asOf": "2026-10-22",
@@ -30,7 +30,7 @@
   },
   "findings": [
     {
-      "key": "R1|user|oscar@northwind.example|Privileged user can register a synced passkey",
+      "key": "R1|user|oscar@northwind.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
       "severity": "critical",
@@ -50,7 +50,7 @@
       "action": "Exclude privileged users from the target(s) 'Passkey Pilot' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
     {
-      "key": "R3|user|nora@northwind.example|SMS/voice-only user with no passkey path",
+      "key": "R3|user|nora@northwind.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "critical",
@@ -70,7 +70,7 @@
       "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
     },
     {
-      "key": "R3|user|quinn@northwind.example|SMS/voice-only user with no passkey path",
+      "key": "R3|user|quinn@northwind.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "critical",
@@ -90,7 +90,7 @@
       "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
     },
     {
-      "key": "R3|user|ravi@northwind.example|SMS/voice-only user with no passkey path",
+      "key": "R3|user|ravi@northwind.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "critical",
@@ -110,7 +110,7 @@
       "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
     },
     {
-      "key": "R3|user|sara.contractor@northwind.example|SMS/voice-only user with no passkey path",
+      "key": "R3|user|sara.contractor@northwind.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "critical",
@@ -130,7 +130,7 @@
       "action": "Fix policy targeting first (they are not targeted by passkey policy), then have them register a passkey."
     },
     {
-      "key": "R3|user|tom_supplier.example#EXT#@northwind.example|SMS/voice-only user with no passkey path",
+      "key": "R3|user|tom_supplier.example#EXT#@northwind.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "critical",

@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "tenant": "Contoso (synthetic demo)",
   "asOf": "2026-10-22",
@@ -30,7 +30,7 @@
   },
   "findings": [
     {
-      "key": "R1|user|alice@contoso.example|Privileged user can register a synced passkey",
+      "key": "R1|user|alice@contoso.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
       "severity": "critical",
@@ -53,7 +53,7 @@
       "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
     {
-      "key": "R1|user|bob@contoso.example|Privileged user can register a synced passkey",
+      "key": "R1|user|bob@contoso.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
       "severity": "critical",
@@ -76,7 +76,7 @@
       "action": "Exclude privileged users from the target(s) 'All users' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
     {
-      "key": "R1|user|carol@contoso.example|Privileged user can register a synced passkey",
+      "key": "R1|user|carol@contoso.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
       "severity": "critical",
@@ -135,7 +135,7 @@
       "action": "Issue this admin a device-bound passkey (security key or Authenticator) and require it with an authentication strength."
     },
     {
-      "key": "R3|user|bob@contoso.example|SMS/voice-only user",
+      "key": "R3|user|bob@contoso.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "high",
@@ -154,7 +154,7 @@
       "action": "Have the user register a passkey (device-bound preferred) before the deadline."
     },
     {
-      "key": "R3|user|dave@contoso.example|SMS/voice-only user",
+      "key": "R3|user|dave@contoso.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "high",
@@ -173,7 +173,7 @@
       "action": "Have the user register a passkey (device-bound preferred) before the deadline."
     },
     {
-      "key": "R3|user|frank_partner.example#EXT#@contoso.example|SMS/voice-only user",
+      "key": "R3|user|frank_partner.example#EXT#@contoso.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "high",

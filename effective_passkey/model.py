@@ -150,6 +150,7 @@ class Tenant:
     groups: dict[str, Group]
     users: dict[str, User]
     source_dir: str = ""
+    raw_policy: dict = field(default_factory=dict)
 
     def group_name(self, gid: str) -> str:
         if gid == ALL_USERS_TARGET:
@@ -465,4 +466,5 @@ def load_tenant(directory: str, name: str | None = None, aaguid_map_path: str | 
         groups=groups,
         users=users,
         source_dir=directory,
+        raw_policy=policy if isinstance(policy, dict) else {"value": policy},
     )

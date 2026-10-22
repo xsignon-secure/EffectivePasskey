@@ -7,3 +7,4 @@ effective-passkey-report/
 # never commit real tenant exports
 exports/
 *-export/
+site/
