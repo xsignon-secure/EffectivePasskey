@@ -1,4 +1,4 @@
-"""Multi-tenant runner for MSPs and consultants.
+"""Multi-tenant runner: audit many tenant exports at once.
 
 Point it at a folder of tenant exports (one sub-folder per client) and it
 writes every client's report plus one consolidated dashboard, so you can see

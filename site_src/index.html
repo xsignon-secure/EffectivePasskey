@@ -45,7 +45,8 @@ footer{margin-top:64px;color:var(--muted);font-size:13px;border-top:1px solid va
 <h1>Your admins can register a weaker passkey than your policy says.</h1>
 <p class="lede">EffectivePasskey computes the passkey policy each Entra ID user actually gets after overlapping passkey
 profiles resolve, and predicts who will be blocked when Microsoft retires SMS and voice. It runs offline on read-only
-exports and never holds a token.</p>
+exports and never holds a token. It is free and open source under the MIT licence, with no paid tier,
+no sign-up and no telemetry.</p>
 
 <div class="count">
   <div><b id="d1">__DAYS_MAIN__</b><span>days to 1 Feb 2027: SMS and voice retire, blocking passkey prompt, no opt-out</span></div>
@@ -54,7 +55,7 @@ exports and never holds a token.</p>
 
 <div class="cta">
   <a class="btn primary" href="demo/contoso/report.html">See a demo report</a>
-  <a class="btn" href="demo/fleet/index.html">MSP fleet dashboard</a>
+  <a class="btn" href="demo/fleet/index.html">Multi-tenant dashboard</a>
   <a class="btn" href="__REPO__">GitHub</a>
 </div>
 
@@ -120,16 +121,16 @@ tools that read SKILL.md.</p>
 <tr><th>R16</th><td>Sign-in logs show admins using SMS, voice or synced passkeys</td></tr>
 </table></div>
 
-<h2>For MSPs and consultants</h2>
+<h2>Many tenants at once</h2>
 <div class="grid">
   <div class="card"><h3>Fleet runner</h3><p>One folder per client, one command, one dashboard sorted worst first.</p></div>
-  <div class="card"><h3>White-label reports</h3><p>Your name, colour and logo on every client report.</p></div>
+  <div class="card"><h3>Your branding</h3><p>Your team's name, colour and logo on every report.</p></div>
   <div class="card"><h3>Drift</h3><p>Compare this month's run with last month's: new findings, fixes, and users whose policy got weaker.</p></div>
 </div>
 <pre><code>python3 -m effective_passkey fleet ./clients -o ./fleet --remediate \
-  --brand-name "Your MSP" --brand-color "#0a5cff" --brand-logo logo.svg --previous ./fleet-last-month</code></pre>
+  --brand-name "Your team" --brand-color "#0a5cff" --brand-logo logo.svg --previous ./fleet-last-month</code></pre>
 
-<footer>EffectivePasskey __VERSION__ · MIT licensed · Use <a href="https://maester.dev">Maester</a> for tenant baselines and
+<footer>EffectivePasskey __VERSION__ · Free and open source (MIT): no paid tier, no sign-up, no telemetry · Use <a href="https://maester.dev">Maester</a> for tenant baselines and
 EffectivePasskey for effective passkey policy. Semantics per Microsoft Learn (passkey profiles; SMS and voice retirement).</footer>
 </main>
 <script>
