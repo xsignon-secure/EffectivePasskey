@@ -20,10 +20,11 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Demo reports are up to date
         run: |
-          for t in contoso fabrikam northwind; do
-            python -m effective_passkey analyze examples/demo-tenants/$t -o examples/reports/$t --as-of 2026-10-22 -q
-          done
-          git diff --exit-code examples/reports
+          make demo
+          git status --porcelain examples
+          test -z "$(git status --porcelain examples)"
+      - name: Site builds
+        run: python scripts/build_site.py --out site --as-of 2026-10-22
       - name: Package installs and runs
         run: |
           pip install .

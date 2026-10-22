@@ -1,0 +1,225 @@
+{
+  "tenant": "Northwind (synthetic demo)",
+  "asOf": "2026-10-22",
+  "changes": [
+    {
+      "id": "C1",
+      "kind": "policy",
+      "title": "Convert legacy FIDO2 settings to an explicit Default passkey profile",
+      "rationale": "Makes the synced-passkey decision explicit instead of inherited from the old attestation toggle.",
+      "fixes": [
+        "R6"
+      ],
+      "before": null,
+      "after": {
+        "displayName": "Default",
+        "passkeyTypes": [
+          "deviceBound",
+          "synced"
+        ],
+        "attestation": "off",
+        "keyRestriction": "none",
+        "weakestCredential": "Synced passkey, any provider, unattested"
+      },
+      "notes": []
+    },
+    {
+      "id": "C2",
+      "kind": "policy",
+      "title": "Retarget profile(s) 'Default' from 'Passkey Pilot' to a group without admins",
+      "rationale": "Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.",
+      "fixes": [
+        "R1",
+        "R4",
+        "R6"
+      ],
+      "before": {
+        "target": "Passkey Pilot",
+        "targetId": "g-pilot",
+        "privilegedUsersCovered": [
+          "oscar@northwind.example"
+        ]
+      },
+      "after": {
+        "target": "Passkey Pilot (excluding privileged users)",
+        "targetId": "ep-proposed-passkey-pilot-excluding-privileged-users",
+        "members": 1
+      },
+      "notes": [
+        "The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it."
+      ]
+    },
+    {
+      "id": "C3",
+      "kind": "policy",
+      "title": "Create profile 'Admins - device-bound, attested'",
+      "rationale": "Admins need a profile that only accepts device-bound, attested passkeys.",
+      "fixes": [
+        "R1"
+      ],
+      "before": null,
+      "after": {
+        "displayName": "Admins - device-bound, attested",
+        "passkeyTypes": [
+          "deviceBound"
+        ],
+        "attestation": "required",
+        "keyRestriction": "none",
+        "weakestCredential": "Device-bound, attested, any authenticator"
+      },
+      "notes": [
+        "Add an AAGUID allow list for your approved security keys."
+      ]
+    },
+    {
+      "id": "C4",
+      "kind": "policy",
+      "title": "Scope privileged users to 'Admins - device-bound, attested'",
+      "rationale": "Every admin should be scoped to the strict profile, and only to it.",
+      "fixes": [
+        "R1"
+      ],
+      "before": null,
+      "after": {
+        "target": "Privileged users (passkey admin profile)",
+        "profile": "Admins - device-bound, attested",
+        "users": [
+          "nora@northwind.example",
+          "oscar@northwind.example"
+        ]
+      },
+      "notes": [
+        "Prefer targeting your existing role-assignable admin group instead of this snapshot group."
+      ]
+    },
+    {
+      "id": "C5",
+      "kind": "policy",
+      "title": "Scope 4 SMS/voice-only user(s) to profile 'Default'",
+      "rationale": "They will get a blocking passkey prompt when SMS/voice retires, but policy does not let them register one.",
+      "fixes": [
+        "R3"
+      ],
+      "before": null,
+      "after": {
+        "target": "SMS/voice users without a passkey path",
+        "profile": "Default",
+        "users": [
+          "quinn@northwind.example",
+          "ravi@northwind.example",
+          "sara.contractor@northwind.example",
+          "tom_supplier.example#EXT#@northwind.example"
+        ]
+      },
+      "notes": [
+        "Or widen the existing workforce target so it includes them."
+      ]
+    },
+    {
+      "id": "C6",
+      "kind": "campaign",
+      "title": "Point the registration campaign at passkeys for all users, with limited snoozes",
+      "rationale": "5 SMS/voice-only user(s) need a nudge before their deadline.",
+      "fixes": [
+        "R8"
+      ],
+      "before": {
+        "state": "enabled",
+        "snoozeDurationInDays": 3,
+        "enforceRegistrationAfterAllowedSnoozes": true,
+        "targets": [
+          "Passkey Pilot"
+        ],
+        "targetedAuthenticationMethod": "microsoftAuthenticator"
+      },
+      "after": {
+        "state": "enabled",
+        "snoozeDurationInDays": 3,
+        "enforceRegistrationAfterAllowedSnoozes": true,
+        "targets": [
+          "All users"
+        ],
+        "targetedAuthenticationMethod": "passkey"
+      },
+      "notes": [
+        "Check the targetedAuthenticationMethod value your tenant's Graph version accepts."
+      ]
+    }
+  ],
+  "userTasks": [
+    {
+      "user": "nora@northwind.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-07-01"
+    },
+    {
+      "user": "quinn@northwind.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    },
+    {
+      "user": "ravi@northwind.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    },
+    {
+      "user": "sara.contractor@northwind.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-02-01"
+    },
+    {
+      "user": "tom_supplier.example#EXT#@northwind.example",
+      "task": "Register a passkey to replace SMS/voice",
+      "rule": "R3",
+      "due": "2027-07-01"
+    },
+    {
+      "user": "nora@northwind.example",
+      "task": "Issue and register a device-bound passkey",
+      "rule": "R7",
+      "due": "now"
+    },
+    {
+      "user": "oscar@northwind.example",
+      "task": "Issue and register a device-bound passkey",
+      "rule": "R7",
+      "due": "now"
+    }
+  ],
+  "outcome": {
+    "resolved": [
+      "[critical] R1 Privileged user can register a synced passkey: oscar@northwind.example",
+      "[high] R4 Privileged SMS/voice user in an 'all passkey types' profile: oscar@northwind.example",
+      "[low] R8 Campaign nudges a non-passkey method: tenant",
+      "[medium] R6 Legacy FIDO2 settings imply synced passkeys: Default (legacy FIDO2 settings)",
+      "[medium] R8 Campaign misses part of the SMS/voice cohort: tenant"
+    ],
+    "remaining": [
+      "[critical] R7 Privileged user has no phishing-resistant method: nora@northwind.example",
+      "[critical] R7 Privileged user has no phishing-resistant method: oscar@northwind.example",
+      "[high] R3 SMS/voice-only user: nora@northwind.example (was critical)",
+      "[high] R3 SMS/voice-only user: quinn@northwind.example (was critical)",
+      "[high] R3 SMS/voice-only user: ravi@northwind.example (was critical)",
+      "[high] R3 SMS/voice-only user: sara.contractor@northwind.example (was critical)",
+      "[high] R3 SMS/voice-only user: tom_supplier.example#EXT#@northwind.example (was critical)"
+    ],
+    "introduced": [],
+    "beforeBySeverity": {
+      "critical": 8,
+      "high": 1,
+      "medium": 2,
+      "low": 1
+    },
+    "afterBySeverity": {
+      "critical": 2,
+      "high": 5
+    },
+    "privilegedSyncedBefore": 1,
+    "privilegedSyncedAfter": 0
+  },
+  "disclaimer": "Proposed changes for human review. EffectivePasskey never applies changes to a tenant."
+}

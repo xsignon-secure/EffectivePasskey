@@ -49,11 +49,12 @@ class Finding:
     action: str = ""
     cohort: str = ""
     user_id: str = ""
+    variant: str = ""  # stable identity when the title changes with severity
 
     @property
     def key(self) -> str:
         """Stable identity across runs, used by the diff."""
-        return f"{self.rule}|{self.subject_type}|{self.subject}|{self.title}"
+        return f"{self.rule}|{self.subject_type}|{self.subject}|{self.variant or self.title}"
 
     def to_dict(self) -> dict:
         return {
@@ -179,6 +180,7 @@ class Auditor:
         loose_targets = sorted({self.tenant.group_name(m.target_id) for sp in loose for m in sp.via})
         self.add(
             rule="R1",
+            variant="overlap",
             severity="critical" if synced else "high",
             title=("Privileged user can register a synced passkey" if synced
                    else "Privileged user can register an unattested passkey"),
@@ -238,6 +240,7 @@ class Auditor:
             ev.append("They will be prompted to register a passkey, but current policy does not let them register one.")
         self.add(
             rule="R3",
+            variant="sms-only",
             severity="critical" if no_path else "high",
             title=("SMS/voice-only user with no passkey path" if no_path else "SMS/voice-only user"),
             subject=u.label, subject_type="user", user_id=u.id, cohort=cohort,

@@ -1,0 +1,132 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Remediation plan</title><style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1d21;--muted:#5f6670;--line:#e3e3df;
+--crit:#b42318;--high:#c4560c;--med:#a77b00;--low:#3b6db3;--info:#5f6670;--ok:#1f7a4d;--accent:#3b4bd8}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--panel:#1b1e23;--ink:#e8e9eb;--muted:#9aa1ab;--line:#2c3038;
+--crit:#ff6b5e;--high:#ff9a4d;--med:#e6c14a;--low:#7aa7ff;--info:#9aa1ab;--ok:#4cc38a;--accent:#8c96ff}}
+*{box-sizing:border-box}
+a{color:var(--accent)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;font-size:12px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:40px 0 12px}
+.meta{color:var(--muted);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:24px 0}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.tile span{color:var(--muted);font-size:13px}
+.tile.alert b{color:var(--crit)}
+.grade{display:inline-block;font-weight:700;border-radius:8px;padding:2px 10px;margin-left:8px;color:#fff}
+.g-A,.g-B{background:var(--ok)}.g-C{background:var(--med)}.g-D,.g-F{background:var(--crit)}
+.callout{background:var(--panel);border-left:4px solid var(--accent);border-radius:6px;padding:12px 16px;margin:16px 0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:13px}
+.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+details.f{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:0}
+details.f summary{cursor:pointer;padding:12px 16px;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.f summary::-webkit-details-marker{display:none}
+details.f .body{padding:0 16px 14px}
+.sev{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:2px 6px;color:#fff}
+.sev.critical{background:var(--crit)}.sev.high{background:var(--high)}.sev.medium{background:var(--med)}
+.sev.low{background:var(--low)}.sev.info{background:var(--info)}
+.rule{font-weight:600;color:var(--muted);font-size:13px}
+.subj{color:var(--muted);font-size:13px;word-break:break-all}
+ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
+.action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.r5,.r4{color:var(--crit);font-weight:600}.r3{color:var(--high)}.r2,.r1{color:var(--ok)}.r0{color:var(--muted)}
+dl.rules{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}dl.rules dt{font-weight:600}dl.rules dd{margin:0;color:var(--muted)}
+.brandbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--accent);color:var(--muted);font-size:14px}
+.brandlogo{max-height:40px;max-width:180px}
+footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+</style></head><body><main>
+
+<h1>Remediation plan: Fabrikam (synthetic demo)</h1>
+<div class="meta">As of 2026-10-22 · Proposed changes for human review. EffectivePasskey never applies changes to a tenant.</div>
+<div class="tiles">
+<div class="tile"><b>6</b><span>proposed policy changes</span></div>
+<div class="tile"><b>6</b><span>findings resolved in simulation</span></div>
+<div class="tile"><b>1 → 0</b><span>admins who can register a synced passkey</span></div>
+<div class="tile"><b>1</b><span>user tasks</span></div>
+</div>
+<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 1 critical, 3 high, 3 medium, 2 low, 1 info.
+After policy changes: 1 high, 2 low, 1 info. The proposed export is in <code>proposed-export/</code>; analyze it to verify.</div>
+
+<h2>Proposed changes</h2><details class='f' open><summary><span class='rule'>C1</span><strong>Remove &#x27;synced&#x27; from attested profile &#x27;Admins - security keys (attested)&#x27;</strong><span class='subj'>fixes R6</span></summary><div class='body'><p>Synced passkeys cannot be attested, so listing them in an attested profile is misleading.</p><div class='meta'>Before</div><pre>{
+  &quot;displayName&quot;: &quot;Admins - security keys (attested)&quot;,
+  &quot;passkeyTypes&quot;: [
+    &quot;deviceBound&quot;,
+    &quot;synced&quot;
+  ],
+  &quot;attestation&quot;: &quot;required&quot;,
+  &quot;keyRestriction&quot;: &quot;allow: [&#x27;ee882879-721c-4913-9775-3dfcce97072a&#x27;]&quot;,
+  &quot;weakestCredential&quot;: &quot;Device-bound, attested, allow-listed authenticators only&quot;
+}</pre><div class='meta'>After</div><pre>{
+  &quot;displayName&quot;: &quot;Admins - security keys (attested)&quot;,
+  &quot;passkeyTypes&quot;: [
+    &quot;deviceBound&quot;
+  ],
+  &quot;attestation&quot;: &quot;required&quot;,
+  &quot;keyRestriction&quot;: &quot;allow: [&#x27;ee882879-721c-4913-9775-3dfcce97072a&#x27;]&quot;,
+  &quot;weakestCredential&quot;: &quot;Device-bound, attested, allow-listed authenticators only&quot;
+}</pre></div></details><details class='f' open><summary><span class='rule'>C2</span><strong>Retarget profile(s) &#x27;Contractors&#x27; from &#x27;Contractors&#x27; to a group without admins</strong><span class='subj'>fixes R1, R4, R6</span></summary><div class='body'><p>Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.</p><div class='meta'>Before</div><pre>{
+  &quot;target&quot;: &quot;Contractors&quot;,
+  &quot;targetId&quot;: &quot;g-contractors&quot;,
+  &quot;privilegedUsersCovered&quot;: [
+    &quot;gina@fabrikam.example&quot;
+  ]
+}</pre><div class='meta'>After</div><pre>{
+  &quot;target&quot;: &quot;Contractors (excluding privileged users)&quot;,
+  &quot;targetId&quot;: &quot;ep-proposed-contractors-excluding-privileged-users&quot;,
+  &quot;members&quot;: 1
+}</pre><p class='meta'>The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it.</p></div></details><details class='f' open><summary><span class='rule'>C3</span><strong>Scope privileged users to &#x27;Workforce - Authenticator only&#x27;</strong><span class='subj'>fixes R1</span></summary><div class='body'><p>Every admin should be scoped to the strict profile, and only to it.</p><div class='meta'>After</div><pre>{
+  &quot;target&quot;: &quot;Privileged users (passkey admin profile)&quot;,
+  &quot;profile&quot;: &quot;Workforce - Authenticator only&quot;,
+  &quot;users&quot;: [
+    &quot;gina@fabrikam.example&quot;,
+    &quot;jack@fabrikam.example&quot;
+  ]
+}</pre><p class='meta'>Prefer targeting your existing role-assignable admin group instead of this snapshot group.</p></div></details><details class='f' open><summary><span class='rule'>C4</span><strong>Add 1 AAGUID(s) to the allow list of &#x27;Admins - security keys (attested)&#x27;</strong><span class='subj'>fixes R5</span></summary><div class='body'><p>Users hold keys this profile would reject, so they would lose sign-in with them.</p><div class='meta'>Before</div><pre>{
+  &quot;aaGuids&quot;: [
+    &quot;ee882879-721c-4913-9775-3dfcce97072a&quot;
+  ]
+}</pre><div class='meta'>After</div><pre>{
+  &quot;aaGuids&quot;: [
+    &quot;a4e9fc6d-4cbe-4758-b8ba-37598bb5bbaa&quot;,
+    &quot;ee882879-721c-4913-9775-3dfcce97072a&quot;
+  ]
+}</pre><p class='meta'>Only add AAGUIDs of authenticator models you approve; otherwise have the users re-register.</p></div></details><details class='f' open><summary><span class='rule'>C5</span><strong>Add 1 AAGUID(s) to the allow list of &#x27;Workforce - Authenticator only&#x27;</strong><span class='subj'>fixes R5</span></summary><div class='body'><p>Users hold keys this profile would reject, so they would lose sign-in with them.</p><div class='meta'>Before</div><pre>{
+  &quot;aaGuids&quot;: [
+    &quot;90a3ccdf-635c-4729-a248-9b709135078f&quot;,
+    &quot;de1e552d-db1d-4423-a619-566b625cdc84&quot;
+  ]
+}</pre><div class='meta'>After</div><pre>{
+  &quot;aaGuids&quot;: [
+    &quot;90a3ccdf-635c-4729-a248-9b709135078f&quot;,
+    &quot;cb69481e-8ff7-4039-93ec-0a2729a154a8&quot;,
+    &quot;de1e552d-db1d-4423-a619-566b625cdc84&quot;
+  ]
+}</pre><p class='meta'>Only add AAGUIDs of authenticator models you approve; otherwise have the users re-register.</p></div></details><details class='f' open><summary><span class='rule'>C6</span><strong>Point the registration campaign at passkeys for all users, with limited snoozes</strong><span class='subj'>fixes R8</span></summary><div class='body'><p>1 SMS/voice-only user(s) need a nudge before their deadline.</p><div class='meta'>Before</div><pre>{
+  &quot;state&quot;: &quot;disabled&quot;,
+  &quot;snoozeDurationInDays&quot;: null,
+  &quot;enforceRegistrationAfterAllowedSnoozes&quot;: null,
+  &quot;targets&quot;: [],
+  &quot;targetedAuthenticationMethod&quot;: null
+}</pre><div class='meta'>After</div><pre>{
+  &quot;state&quot;: &quot;enabled&quot;,
+  &quot;snoozeDurationInDays&quot;: 1,
+  &quot;enforceRegistrationAfterAllowedSnoozes&quot;: true,
+  &quot;targets&quot;: [
+    &quot;All users&quot;
+  ],
+  &quot;targetedAuthenticationMethod&quot;: &quot;passkey&quot;
+}</pre><p class='meta'>Check the targetedAuthenticationMethod value your tenant&#x27;s Graph version accepts.</p></div></details>
+<h2>User tasks</h2>
+<div class="tablewrap"><table><thead><tr><th>User</th><th>Task</th><th>Rule</th><th>Due</th></tr></thead><tbody><tr><td>liam@fabrikam.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr></tbody></table></div>
+<h2>Still open after the proposal</h2><ul><li>[high] R3 SMS/voice-only user: liam@fabrikam.example</li><li>[info] R10 Authenticator AAGUIDs in allow list: Workforce - Authenticator only</li><li>[low] R10 Many passkey profiles: tenant</li><li>[low] R10 Profile not targeted by any group: Pilot (unused)</li></ul>
+<footer><p>Generated by EffectivePasskey. Changes are proposals for human approval and are never applied automatically.</p></footer>
+</main></body></html>

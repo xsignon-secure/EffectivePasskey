@@ -1,6 +1,6 @@
 # EffectivePasskey report: Fabrikam (synthetic demo)
 
-As of 2026-10-22 · grade **D** · EffectivePasskey 0.1.0
+As of 2026-10-22 · grade **D** · EffectivePasskey 0.2.0
 
 - **102 days** to 1 Feb 2027 (SMS/voice retirement); 252 days to 1 Jul 2027 (Global Admins, external users)
 - 6 users analyzed, 2 privileged, **1 privileged users can register a synced passkey**
@@ -151,4 +151,4 @@ Evidence:
 
 _Per-user FIDO2 detail is exported for privileged users and the SMS/voice cohort only, which keeps Graph calls bounded. Rules that read registered keys (R2, R5) cover that scope._
 
-_Generated offline by EffectivePasskey 0.1.0. No tenant credentials were used by the analyzer._
+_Generated offline by EffectivePasskey 0.2.0. No tenant credentials were used by the analyzer._

@@ -1,7 +1,7 @@
 {
   "tool": {
     "name": "EffectivePasskey",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "tenant": "Fabrikam (synthetic demo)",
   "asOf": "2026-10-22",
@@ -30,7 +30,7 @@
   },
   "findings": [
     {
-      "key": "R1|user|gina@fabrikam.example|Privileged user can register a synced passkey",
+      "key": "R1|user|gina@fabrikam.example|overlap",
       "rule": "R1",
       "ruleName": "Overlap weakening",
       "severity": "critical",
@@ -53,7 +53,7 @@
       "action": "Exclude privileged users from the target(s) 'Contractors' of the loose profile (e.g. scope it to a group that excludes admins), and scope admins only to a device-bound, attested profile."
     },
     {
-      "key": "R3|user|liam@fabrikam.example|SMS/voice-only user",
+      "key": "R3|user|liam@fabrikam.example|sms-only",
       "rule": "R3",
       "ruleName": "Deadline cohort",
       "severity": "high",

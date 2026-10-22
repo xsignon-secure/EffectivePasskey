@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EffectivePasskey</title>
+<meta name="description" content="Offline Entra ID passkey audit: compute the passkey policy each user actually gets after profile overlap, and who gets blocked when SMS and voice retire on 1 February 2027.">
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1d21;--muted:#5f6670;--line:#e3e3df;--crit:#b42318;--ok:#1f7a4d;--accent:#3b4bd8;--code:#f0f0ec}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--panel:#1b1e23;--ink:#e8e9eb;--muted:#9aa1ab;--line:#2c3038;--crit:#ff6b5e;--ok:#4cc38a;--accent:#8c96ff;--code:#22262c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:48px 16px 80px}
+a{color:var(--accent)}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:0 0 16px;letter-spacing:-.02em}
+h2{font-size:24px;margin:64px 0 16px}
+.lede{font-size:19px;color:var(--muted);max-width:720px}
+.count{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:32px 0;max-width:720px}
+.count div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.count b{display:block;font-size:40px;font-variant-numeric:tabular-nums;color:var(--crit)}
+.count span{color:var(--muted);font-size:14px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.btn{display:inline-block;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.flaw{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin:24px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.card h3{margin:0 0 8px;font-size:16px}
+.card ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;padding:2px 6px;color:#fff}
+.tag.ok{background:var(--ok)}.tag.bad{background:var(--crit)}
+.plus{font-size:28px;color:var(--muted);text-align:center}
+.result{border-left:4px solid var(--crit);background:var(--panel);border-radius:8px;padding:14px 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.grid .card p{color:var(--muted);font-size:14px;margin:4px 0 12px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tablewrap{overflow-x:auto}
+footer{margin-top:64px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:640px){.flaw{grid-template-columns:1fr}.plus{transform:rotate(90deg)}}
+</style>
+</head>
+<body><main>
+
+<h1>Your admins can register a weaker passkey than your policy says.</h1>
+<p class="lede">EffectivePasskey computes the passkey policy each Entra ID user actually gets after overlapping passkey
+profiles resolve, and predicts who will be blocked when Microsoft retires SMS and voice. It runs offline on read-only
+exports and never holds a token.</p>
+
+<div class="count">
+  <div><b id="d1">__DAYS_MAIN__</b><span>days to 1 Feb 2027: SMS and voice retire, blocking passkey prompt, no opt-out</span></div>
+  <div><b id="d2">__DAYS_LATE__</b><span>days to 1 Jul 2027: Global Admins and external users follow</span></div>
+</div>
+
+<div class="cta">
+  <a class="btn primary" href="demo/contoso/report.html">See a demo report</a>
+  <a class="btn" href="demo/fleet/index.html">MSP fleet dashboard</a>
+  <a class="btn" href="__REPO__">GitHub</a>
+</div>
+
+<h2>The flaw, in one picture</h2>
+<p>Microsoft Learn: when a user is scoped to more than one passkey profile, a passkey is allowed if it satisfies
+<strong>at least one</strong> of them. Not most-restrictive-wins.</p>
+<div class="flaw">
+  <div class="card"><h3>Admin profile <span class="tag ok">strict</span></h3>
+    <ul><li>Device-bound passkeys only</li><li>Attestation required</li><li>Security key allow list</li></ul></div>
+  <div class="plus">+</div>
+  <div class="card"><h3>All Users profile <span class="tag bad">loose</span></h3>
+    <ul><li>All passkey types</li><li>Synced passkeys allowed</li><li>No attestation</li></ul></div>
+</div>
+<div class="result"><strong>Effective result for a Global Admin in both:</strong> they can register a synced, unattested
+passkey. The portal shows both profiles side by side and never computes this per user. EffectivePasskey does.</div>
+
+<h2>Demo tenants</h2>
+<p>Three synthetic tenants with planted flaws. No real tenant data.</p>
+<div class="grid">
+  <div class="card"><h3>Contoso</h3><p>All Users overrides a strict admin profile. A PIM-eligible admin already holds an iCloud passkey.</p>
+    <a href="demo/contoso/report.html">Report</a> · <a href="demo/contoso/remediation/remediation.html">Remediation plan</a></div>
+  <div class="card"><h3>Fabrikam</h3><p>AAGUID allow lists that lock out existing keys, and an "attested" profile bypassed through a nested group.</p>
+    <a href="demo/fabrikam/report.html">Report</a> · <a href="demo/fabrikam/remediation/remediation.html">Remediation plan</a></div>
+  <div class="card"><h3>Northwind</h3><p>Legacy FIDO2 settings, SMS-only users with no passkey path, and both deadline cohorts.</p>
+    <a href="demo/northwind/report.html">Report</a> · <a href="demo/northwind/remediation/remediation.html">Remediation plan</a></div>
+</div>
+
+<h2>Run it on your tenant</h2>
+<pre><code># 1. Export (PowerShell 7, read-only delegated scopes; you run it, the analyzer never sees a token)
+./collector/Export-EffectivePasskeyData.ps1 -OutputPath ./my-export
+
+# 2. Analyze (Python 3.10+, no dependencies)
+python3 -m effective_passkey analyze ./my-export -o ./report
+
+# 3. Propose fixes, simulated before you touch anything
+python3 -m effective_passkey remediate ./my-export -o ./plan</code></pre>
+<p>Also ships as an agent skill (<code>skills/effective-passkey/SKILL.md</code>) for Claude Code, Codex, Cursor and other
+tools that read SKILL.md.</p>
+
+<h2>What it checks</h2>
+<div class="tablewrap"><table>
+<tr><th>R1</th><td>Overlap weakening: a privileged user can register a synced or unattested passkey via any profile</td></tr>
+<tr><th>R2</th><td>A privileged user already holds a synced or unattested passkey</td></tr>
+<tr><th>R3</th><td>SMS/voice-only users split into the 1 Feb and 1 Jul 2027 cohorts, flagged critical if they have no passkey path</td></tr>
+<tr><th>R4</th><td>Privileged SMS/voice user in an "all passkey types" profile</td></tr>
+<tr><th>R5</th><td>AAGUID trap: a registered key that no scoped profile accepts</td></tr>
+<tr><th>R6</th><td>Attestation illusion</td></tr>
+<tr><th>R7</th><td>Privileged user with no phishing-resistant method</td></tr>
+<tr><th>R8</th><td>Registration campaign gaps</td></tr>
+<tr><th>R9</th><td>Privileged user excluded from the passkey policy</td></tr>
+<tr><th>R10</th><td>Policy hygiene</td></tr>
+</table></div>
+
+<h2>For MSPs and consultants</h2>
+<div class="grid">
+  <div class="card"><h3>Fleet runner</h3><p>One folder per client, one command, one dashboard sorted worst first.</p></div>
+  <div class="card"><h3>White-label reports</h3><p>Your name, colour and logo on every client report.</p></div>
+  <div class="card"><h3>Drift</h3><p>Compare this month's run with last month's: new findings, fixes, and users whose policy got weaker.</p></div>
+</div>
+<pre><code>python3 -m effective_passkey fleet ./clients -o ./fleet --remediate \
+  --brand-name "Your MSP" --brand-color "#0a5cff" --brand-logo logo.svg --previous ./fleet-last-month</code></pre>
+
+<footer>EffectivePasskey __VERSION__ · MIT licensed · Use <a href="https://maester.dev">Maester</a> for tenant baselines and
+EffectivePasskey for effective passkey policy. Semantics per Microsoft Learn (passkey profiles; SMS and voice retirement).</footer>
+</main>
+<script>
+(function(){function days(d){return Math.max(0,Math.ceil((new Date(d)-new Date())/864e5))}
+document.getElementById('d1').textContent=days('2027-02-01T00:00:00Z');
+document.getElementById('d2').textContent=days('2027-07-01T00:00:00Z');})();
+</script>
+</body></html>

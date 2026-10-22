@@ -43,10 +43,15 @@ only thing that beats inclusion.
    - For a single user, run `effective-passkey explain <dir> <upn>` and walk through the chain.
    Rule meanings are in `references/rules.md`.
 
-6. **Remediation.** Suggest changes as steps for a human to make in the Entra portal. Never apply
-   changes to a tenant and never write to Graph. Typical fixes: scope the loose profile to a group
-   that excludes admins; scope admins only to a device-bound, attested profile; have admins replace
-   synced keys; get the SMS/voice cohort a passkey path before their deadline.
+6. **Remediation.** Run `effective-passkey remediate <dir> -o <plan-dir>`. It proposes changes,
+   simulates them and writes `remediation.md`. Walk the user through each change in order, point out
+   anything listed under "introduced" (usually a weak key that stops working, so the user task comes
+   first), and offer `analyze <plan-dir>/proposed-export` as proof. Present changes as steps for a
+   human in the Entra portal. Never apply changes to a tenant and never write to Graph.
+
+   For an MSP with many clients: `effective-passkey fleet <parent-dir> -o <out> --remediate`, with
+   `--brand-name/--brand-color/--brand-logo` for white-label reports and `--previous <last-out>` for
+   month-over-month drift.
 
 7. **Drift.** For a later run, `effective-passkey diff old/result.json new/result.json` lists new
    and resolved findings and users whose effective policy got weaker or stronger.

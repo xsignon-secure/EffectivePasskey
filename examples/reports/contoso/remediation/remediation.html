@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Remediation plan</title><style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1b1d21;--muted:#5f6670;--line:#e3e3df;
+--crit:#b42318;--high:#c4560c;--med:#a77b00;--low:#3b6db3;--info:#5f6670;--ok:#1f7a4d;--accent:#3b4bd8}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--panel:#1b1e23;--ink:#e8e9eb;--muted:#9aa1ab;--line:#2c3038;
+--crit:#ff6b5e;--high:#ff9a4d;--med:#e6c14a;--low:#7aa7ff;--info:#9aa1ab;--ok:#4cc38a;--accent:#8c96ff}}
+*{box-sizing:border-box}
+a{color:var(--accent)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;font-size:12px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:40px 0 12px}
+.meta{color:var(--muted);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:24px 0}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.tile span{color:var(--muted);font-size:13px}
+.tile.alert b{color:var(--crit)}
+.grade{display:inline-block;font-weight:700;border-radius:8px;padding:2px 10px;margin-left:8px;color:#fff}
+.g-A,.g-B{background:var(--ok)}.g-C{background:var(--med)}.g-D,.g-F{background:var(--crit)}
+.callout{background:var(--panel);border-left:4px solid var(--accent);border-radius:6px;padding:12px 16px;margin:16px 0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:13px}
+.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+details.f{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:0}
+details.f summary{cursor:pointer;padding:12px 16px;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.f summary::-webkit-details-marker{display:none}
+details.f .body{padding:0 16px 14px}
+.sev{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:2px 6px;color:#fff}
+.sev.critical{background:var(--crit)}.sev.high{background:var(--high)}.sev.medium{background:var(--med)}
+.sev.low{background:var(--low)}.sev.info{background:var(--info)}
+.rule{font-weight:600;color:var(--muted);font-size:13px}
+.subj{color:var(--muted);font-size:13px;word-break:break-all}
+ol.ev{margin:8px 0;padding-left:22px;color:var(--ink)}ol.ev li{margin:2px 0}
+.action{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.r5,.r4{color:var(--crit);font-weight:600}.r3{color:var(--high)}.r2,.r1{color:var(--ok)}.r0{color:var(--muted)}
+dl.rules{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}dl.rules dt{font-weight:600}dl.rules dd{margin:0;color:var(--muted)}
+.brandbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--accent);color:var(--muted);font-size:14px}
+.brandlogo{max-height:40px;max-width:180px}
+footer{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+</style></head><body><main>
+
+<h1>Remediation plan: Contoso (synthetic demo)</h1>
+<div class="meta">As of 2026-10-22 · Proposed changes for human review. EffectivePasskey never applies changes to a tenant.</div>
+<div class="tiles">
+<div class="tile"><b>2</b><span>proposed policy changes</span></div>
+<div class="tile"><b>6</b><span>findings resolved in simulation</span></div>
+<div class="tile"><b>3 → 0</b><span>admins who can register a synced passkey</span></div>
+<div class="tile"><b>5</b><span>user tasks</span></div>
+</div>
+<div class="callout">Simulated by re-running the audit on the proposed configuration. Findings before: 5 critical, 4 high, 3 medium.
+After policy changes: 2 critical, 4 high, 1 medium. The proposed export is in <code>proposed-export/</code>; analyze it to verify.</div>
+<div class='callout'><strong>Introduced by the proposal:</strong><ul><li>[high] R5 Registered passkey not accepted by any scoped profile: carol@contoso.example</li></ul>An R5 here usually means a weak key the user holds stops working once the loose profile no longer covers them. Complete that user's task first.</div>
+<h2>Proposed changes</h2><details class='f' open><summary><span class='rule'>C1</span><strong>Retarget profile(s) &#x27;Default&#x27; from &#x27;All users&#x27; to a group without admins</strong><span class='subj'>fixes R1, R4, R6</span></summary><div class='body'><p>Entra allows a passkey if any scoped profile allows it, so a loose profile on a target that contains admins overrides their strict profile.</p><div class='meta'>Before</div><pre>{
+  &quot;target&quot;: &quot;All users&quot;,
+  &quot;targetId&quot;: &quot;all_users&quot;,
+  &quot;privilegedUsersCovered&quot;: [
+    &quot;alice@contoso.example&quot;,
+    &quot;bob@contoso.example&quot;,
+    &quot;carol@contoso.example&quot;
+  ]
+}</pre><div class='meta'>After</div><pre>{
+  &quot;target&quot;: &quot;All users (excluding privileged users)&quot;,
+  &quot;targetId&quot;: &quot;ep-proposed-all-users-excluding-privileged-users&quot;,
+  &quot;members&quot;: 3
+}</pre><p class='meta'>The proposed group is a static snapshot. In production, keep it current with a dynamic membership rule or by excluding your role-assignable admin groups from it.</p></div></details><details class='f' open><summary><span class='rule'>C2</span><strong>Point the registration campaign at passkeys for all users, with limited snoozes</strong><span class='subj'>fixes R8</span></summary><div class='body'><p>3 SMS/voice-only user(s) need a nudge before their deadline.</p><div class='meta'>Before</div><pre>{
+  &quot;state&quot;: &quot;enabled&quot;,
+  &quot;snoozeDurationInDays&quot;: 1,
+  &quot;enforceRegistrationAfterAllowedSnoozes&quot;: false,
+  &quot;targets&quot;: [
+    &quot;All users&quot;
+  ],
+  &quot;targetedAuthenticationMethod&quot;: &quot;passkey&quot;
+}</pre><div class='meta'>After</div><pre>{
+  &quot;state&quot;: &quot;enabled&quot;,
+  &quot;snoozeDurationInDays&quot;: 1,
+  &quot;enforceRegistrationAfterAllowedSnoozes&quot;: true,
+  &quot;targets&quot;: [
+    &quot;All users&quot;
+  ],
+  &quot;targetedAuthenticationMethod&quot;: &quot;passkey&quot;
+}</pre><p class='meta'>Check the targetedAuthenticationMethod value your tenant&#x27;s Graph version accepts.</p></div></details>
+<h2>User tasks</h2>
+<div class="tablewrap"><table><thead><tr><th>User</th><th>Task</th><th>Rule</th><th>Due</th></tr></thead><tbody><tr><td>carol@contoso.example</td><td>Register a device-bound key, then delete the weak passkey</td><td>R2</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Issue and register a device-bound passkey</td><td>R7</td><td>now</td></tr><tr><td>bob@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>dave@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-02-01</td></tr><tr><td>frank_partner.example#EXT#@contoso.example</td><td>Register a passkey to replace SMS/voice</td><td>R3</td><td>2027-07-01</td></tr></tbody></table></div>
+<h2>Still open after the proposal</h2><ul><li>[critical] R2 Privileged user holds a synced passkey: carol@contoso.example</li><li>[critical] R7 Privileged user has no phishing-resistant method: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: bob@contoso.example</li><li>[high] R3 SMS/voice-only user: dave@contoso.example</li><li>[high] R3 SMS/voice-only user: frank_partner.example#EXT#@contoso.example</li><li>[medium] R9 Privileged user excluded from passkey policy: breakglass01@contoso.example</li></ul>
+<footer><p>Generated by EffectivePasskey. Changes are proposals for human approval and are never applied automatically.</p></footer>
+</main></body></html>
